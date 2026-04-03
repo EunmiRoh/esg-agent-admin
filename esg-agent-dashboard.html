@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESG Agent Orchestration | Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#002555;--navy-d:#001A3D;--navy-l:#E8EDF5;--navy-ll:#F4F7FB;--accent:#3F8CAA;--accent-l:#EBF4F8;--white:#fff;--off:#F5F7FA;--g1:#1C2340;--g2:#4A5270;--g3:#8890A8;--border:#DDE2EE;--auto:#00A050;--auto-l:#E6F9EF;--cond:#E07B00;--cond-l:#FFF4E5;--hitl:#C0392B;--hitl-l:#FDECEB;--font:"Noto Sans KR",sans-serif;--mono:"JetBrains Mono",monospace;--sidebar:230px;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;height:100vh;overflow:hidden;}
+.sidebar{width:var(--sidebar);background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.sidebar-header{padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-logo{font-size:10px;font-weight:700;letter-spacing:2.5px;color:rgba(255,255,255,.45);text-transform:uppercase;margin-bottom:4px;}
+.sidebar-title{font-size:15px;font-weight:900;}
+.sidebar-sub{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px;}
+.nav-section{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:0 16px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;transition:background .15s;font-size:13px;color:rgba(255,255,255,.7);border:none;background:none;width:100%;text-align:left;font-family:var(--font);}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;font-weight:700;}
+.nav-item .ni{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.nav-item .nb{font-size:10px;font-weight:700;background:var(--hitl);color:#fff;padding:1px 6px;border-radius:10px;margin-left:auto;}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);}
+.sidebar-version{font-size:10px;color:rgba(255,255,255,.3);margin-bottom:8px;}
+.sidebar-user{display:flex;align-items:center;gap:8px;}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;}
+.user-name{font-size:12px;font-weight:600;color:#fff;}
+.user-role{font-size:10px;color:rgba(255,255,255,.4);}
+.logout-btn{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:14px;margin-left:auto;}
+.logout-btn:hover{color:#fff;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;gap:16px;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.btn-sm{padding:6px 14px;border-radius:4px;font-size:12px;font-weight:600;border:1px solid var(--border);cursor:pointer;font-family:var(--font);background:var(--white);color:var(--g2);transition:all .15s;}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm.primary{background:var(--navy);border-color:var(--navy);color:#fff;}
+.btn-sm.primary:hover{background:var(--navy-d);}
+.content{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}.panel.active{display:block;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--white);border-radius:8px;padding:20px;border:1px solid var(--border);position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.navy::before{background:var(--navy);}.stat-card.accent::before{background:var(--accent);}
+.stat-card.auto::before{background:var(--auto);}.stat-card.hitl::before{background:var(--hitl);}
+.stat-label{font-size:11px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:900;color:var(--navy);font-family:var(--mono);}
+.stat-sub{font-size:11px;color:var(--g3);margin-top:4px;}
+.pipe-box{background:var(--white);border-radius:8px;border:1px solid var(--border);padding:24px;margin-bottom:24px;}
+.pipe-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;}
+.pipe{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;}
+.agent-node{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 20px;border-radius:8px;border:2px solid var(--border);background:var(--white);min-width:130px;transition:all .3s;}
+.agent-node.done{border-color:var(--auto);}
+.a-icon{font-size:22px;}.a-name{font-size:11px;font-weight:700;color:var(--navy);text-align:center;}
+.a-stat{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.a-stat.done{background:var(--auto-l);color:var(--auto);}
+.a-time{font-size:10px;color:var(--g3);font-family:var(--mono);}
+.arrow{width:40px;height:2px;background:var(--border);position:relative;flex-shrink:0;}
+.arrow::after{content:'▶';position:absolute;right:-6px;top:-7px;font-size:10px;color:var(--border);}
+.arrow.done{background:var(--auto);}.arrow.done::after{color:var(--auto);}
+.q-section{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.q-card{background:var(--white);border-radius:8px;border:1px solid var(--border);padding:20px;}
+.q-card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;}
+.q-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.q-label{font-size:12px;color:var(--g2);width:80px;flex-shrink:0;}
+.q-bar{flex:1;height:8px;background:var(--navy-l);border-radius:4px;overflow:hidden;}
+.q-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.q-fill.hi{background:var(--auto);}.q-fill.md{background:var(--cond);}.q-fill.lo{background:var(--hitl);}
+.q-score{font-size:12px;font-weight:700;font-family:var(--mono);width:30px;text-align:right;}
+.tbl-box{background:var(--white);border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:24px;}
+.tbl-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.tbl-title{font-size:13px;font-weight:700;color:var(--navy);}
+.tbl-filter{display:flex;gap:6px;flex-wrap:wrap;}
+.f-btn{padding:4px 12px;border-radius:4px;font-size:11px;font-weight:600;border:1px solid var(--border);background:var(--white);color:var(--g2);cursor:pointer;font-family:var(--font);transition:all .15s;}
+.f-btn:hover{border-color:var(--accent);color:var(--accent);}
+.f-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:10px 16px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--g3);border-bottom:1px solid var(--border);background:var(--navy-ll);}
+td{padding:12px 16px;font-size:12px;border-bottom:1px solid var(--border);color:var(--g2);}
+tr:hover td{background:var(--navy-ll);}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;}
+.badge.a{background:#EBF5EE;color:#1B7A3D;}.badge.b{background:var(--accent-l);color:var(--accent);}
+.badge.c{background:var(--cond-l);color:var(--cond);}.badge.d{background:var(--hitl-l);color:var(--hitl);}
+.dist-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.dist-color{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+.dist-label{font-size:12px;color:var(--g2);flex:1;}
+.dist-pct{font-size:14px;font-weight:900;font-family:var(--mono);}
+.dist-bar{width:100%;height:8px;background:var(--navy-l);border-radius:4px;overflow:hidden;margin-bottom:10px;}
+.dist-fill{height:100%;border-radius:4px;}
+.log-entry{display:flex;align-items:flex-start;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12px;}
+.log-time{font-family:var(--mono);font-size:11px;color:var(--g3);width:120px;flex-shrink:0;}
+.log-agent{font-weight:700;color:var(--navy);width:100px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.log-msg{color:var(--g2);flex:1;}
+.log-s{font-weight:600;flex-shrink:0;}
+.log-s.ok{color:var(--auto);}.log-s.esc{color:var(--hitl);}
+.login-overlay{position:fixed;inset:0;z-index:9999;background:var(--navy-d);display:flex;align-items:center;justify-content:center;}
+.login-overlay.hidden{display:none;}
+.login-box{background:var(--white);border-radius:10px;padding:40px 36px;width:360px;box-shadow:0 24px 64px rgba(0,0,0,.4);text-align:center;}
+.login-logo{font-size:10px;font-weight:700;letter-spacing:3px;color:var(--g3);text-transform:uppercase;margin-bottom:6px;}
+.login-title{font-size:20px;font-weight:900;color:var(--navy);margin-bottom:4px;}
+.login-desc{font-size:12px;color:var(--g3);margin-bottom:28px;}
+.login-label{font-size:11px;font-weight:700;color:var(--g2);text-align:left;display:block;margin-bottom:5px;}
+.login-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:4px;font-size:13px;font-family:var(--font);color:var(--g1);outline:none;margin-bottom:14px;}
+.login-input:focus{border-color:var(--navy);}
+.login-btn{width:100%;padding:12px;background:var(--navy);border:none;border-radius:4px;color:#fff;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:background .2s;}
+.login-btn:hover{background:var(--navy-d);}
+.login-error{font-size:12px;color:var(--hitl);margin-top:10px;display:none;}
+.loading{text-align:center;padding:40px;color:var(--g3);font-size:13px;}
+@media(max-width:1024px){.stats-row{grid-template-columns:repeat(2,1fr);}.q-section{grid-template-columns:1fr;}}
+@media(max-width:768px){.sidebar{display:none;}.stats-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">ESG-AACS</div>
+    <div class="login-title">Agent Orchestration</div>
+    <div class="login-desc">ESG 자가진단 AI 에이전트 관리 시스템</div>
+    <label class="login-label">관리자 비밀번호</label>
+    <input class="login-input" type="password" id="loginPw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-error" id="loginErr">비밀번호가 올바르지 않습니다.</div>
+  </div>
+</div>
+<nav class="sidebar">
+  <div class="sidebar-header"><div class="sidebar-logo">ESG-AACS</div><div class="sidebar-title">Agent Orchestration</div><div class="sidebar-sub">관리자 대시보드 v8.0</div></div>
+  <div class="nav-section"><div class="nav-label">모니터링</div>
+    <button class="nav-item active" onclick="show('dashboard',this)"><span class="ni">📊</span> 현황 대시보드</button>
+    <button class="nav-item" onclick="show('pipeline',this)"><span class="ni">🔗</span> Agent 파이프라인</button>
+    <button class="nav-item" onclick="show('logs',this)"><span class="ni">📋</span> 실행 로그</button>
+  </div>
+  <div class="nav-section"><div class="nav-label">HITL 검수</div>
+    <button class="nav-item" onclick="show('hitl',this)"><span class="ni">🔴</span> HITL 큐 <span class="nb" id="hitlBadge">0</span></button>
+  </div>
+  <div class="nav-section"><div class="nav-label">데이터</div>
+    <button class="nav-item" onclick="show('data',this)"><span class="ni">🗄️</span> 진단 결과 DB</button>
+    <button class="nav-item" onclick="show('quality',this)"><span class="ni">📈</span> 품질 분석</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-version">ESG_CLAUDE.md v1.2 · Supabase</div>
+    <div class="sidebar-user"><div class="avatar">관</div><div style="flex:1"><div class="user-name">관리자</div><div class="user-role">admin</div></div><button class="logout-btn" onclick="doLogout()">⏻</button></div>
+  </div>
+</nav>
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topTitle">현황 대시보드</div>
+    <div class="topbar-right">
+      <span style="font-size:11px;color:var(--g3);" id="lastUpdate"></span>
+      <button class="btn-sm" onclick="loadAll()">↻ 새로고침</button>
+      <button class="btn-sm primary" onclick="exportCSV()">📥 CSV</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-row">
+        <div class="stat-card navy"><div class="stat-label">총 진단 건수</div><div class="stat-value" id="sTotal">—</div><div class="stat-sub">전체 누적</div></div>
+        <div class="stat-card auto"><div class="stat-label">평균 종합 점수</div><div class="stat-value" id="sAvg">—</div><div class="stat-sub">전체 평균</div></div>
+        <div class="stat-card accent"><div class="stat-label">참여 업체 수</div><div class="stat-value" id="sCo">—</div><div class="stat-sub">고유 업체</div></div>
+        <div class="stat-card hitl"><div class="stat-label">최다 등급</div><div class="stat-value" id="sGrade">—</div><div class="stat-sub">최빈 등급</div></div>
+      </div>
+      <div class="pipe-box"><div class="pipe-title">Agent Orchestration 파이프라인</div>
+        <div class="pipe">
+          <div class="agent-node done"><div class="a-icon">🎯</div><div class="a-name">Stage 2<br>prediction</div><div class="a-stat done">GBM+SHAP</div><div class="a-time">~1.2s</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">📝</div><div class="a-name">Stage 3<br>consulting</div><div class="a-stat done">RAG+KG</div><div class="a-time">~8.5s</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">📎</div><div class="a-name">Stage 3-E<br>evidence</div><div class="a-stat done">법규검증</div><div class="a-time">~3.2s</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">👤</div><div class="a-name">Stage 4<br>review</div><div class="a-stat done">HITL</div><div class="a-time">판정</div></div>
+        </div>
+      </div>
+      <div class="q-section">
+        <div class="q-card"><div class="q-card-title">등급 분포</div><div id="gradeDist"><div class="loading">로딩 중...</div></div></div>
+        <div class="q-card"><div class="q-card-title">업종별 평균 점수</div><div id="indAvg"><div class="loading">로딩 중...</div></div></div>
+      </div>
+      <div class="q-card" style="margin-bottom:24px;"><div class="q-card-title">E / S / G 영역별 평균 점수</div><div id="esgAvg"><div class="loading">로딩 중...</div></div></div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="panel" id="panel-pipeline">
+      <div class="pipe-box"><div class="pipe-title">Harness 제어 흐름 (ESG_CLAUDE.md v1.2)</div>
+        <div class="pipe">
+          <div class="agent-node done"><div class="a-icon">🎯</div><div class="a-name">prediction</div><div class="a-stat done">continue</div><div class="a-time">conf ≥ 0.7</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">📝</div><div class="a-name">consulting</div><div class="a-stat done">continue</div><div class="a-time">Q ≥ 6.0</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">📎</div><div class="a-name">evidence</div><div class="a-stat done">continue</div><div class="a-time">법규 ✓</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node done"><div class="a-icon">👤</div><div class="a-name">review</div><div class="a-stat done">auto_confirm</div><div class="a-time">Q ≥ 8.0</div></div>
+        </div>
+      </div>
+      <div class="q-section">
+        <div class="q-card"><div class="q-card-title">상태 반환 모델</div>
+          <div class="q-row"><div class="q-label" style="width:90px">continue</div><div class="q-bar"><div class="q-fill hi" style="width:87%"></div></div><div class="q-score" style="color:var(--auto)">87%</div></div>
+          <div class="q-row"><div class="q-label" style="width:90px">retry</div><div class="q-bar"><div class="q-fill md" style="width:9%"></div></div><div class="q-score" style="color:var(--cond)">9%</div></div>
+          <div class="q-row"><div class="q-label" style="width:90px">escalate</div><div class="q-bar"><div class="q-fill lo" style="width:4%"></div></div><div class="q-score" style="color:var(--hitl)">4%</div></div>
+        </div>
+        <div class="q-card"><div class="q-card-title">Hook 통과율</div>
+          <div class="q-row"><div class="q-label" style="width:90px">Pre Hook</div><div class="q-bar"><div class="q-fill hi" style="width:98%"></div></div><div class="q-score">98%</div></div>
+          <div class="q-row"><div class="q-label" style="width:90px">Post Hook</div><div class="q-bar"><div class="q-fill hi" style="width:91%"></div></div><div class="q-score">91%</div></div>
+          <div class="q-row"><div class="q-label" style="width:90px">Fail Hook</div><div class="q-bar"><div class="q-fill md" style="width:5%"></div></div><div class="q-score">5%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel" id="panel-logs">
+      <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">Agent 실행 로그</div></div>
+        <div style="max-height:500px;overflow-y:auto;" id="logList"><div class="loading">로딩 중...</div></div>
+      </div>
+    </div>
+
+    <!-- HITL -->
+    <div class="panel" id="panel-hitl">
+      <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">HITL 검수 큐 (점수 &lt; 50 또는 등급 C·D)</div></div>
+        <table><thead><tr><th>NO</th><th>기업</th><th>업종</th><th>등급</th><th>점수</th><th>E</th><th>S</th><th>G</th><th>진단일</th></tr></thead>
+        <tbody id="hitlBody"><tr><td colspan="9" class="loading">로딩 중...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- DATA -->
+    <div class="panel" id="panel-data">
+      <div class="tbl-box"><div class="tbl-head">
+        <div class="tbl-title">진단 결과 DB — <span id="dataCount">0</span>건</div>
+        <div class="tbl-filter" id="gradeFilter">
+          <button class="f-btn active" data-grade="all">전체</button>
+          <button class="f-btn" data-grade="A">A</button>
+          <button class="f-btn" data-grade="B">B</button>
+          <button class="f-btn" data-grade="C">C</button>
+          <button class="f-btn" data-grade="D">D</button>
+        </div></div>
+        <div style="max-height:500px;overflow-y:auto;"><table>
+          <thead><tr><th>NO</th><th>진단일시</th><th>업체명</th><th>사업자번호</th><th>규모</th><th>업종</th><th>점수</th><th>등급</th><th>라벨</th><th>E</th><th>S</th><th>G</th><th>강점</th><th>취약</th></tr></thead>
+          <tbody id="dataBody"><tr><td colspan="14" class="loading">로딩 중...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- QUALITY -->
+    <div class="panel" id="panel-quality">
+      <div class="q-section">
+        <div class="q-card"><div class="q-card-title">등급별 평균 점수</div><div id="gradeAvg"><div class="loading">로딩 중...</div></div></div>
+        <div class="q-card"><div class="q-card-title">강점/취약 분포</div><div id="swDist"><div class="loading">로딩 중...</div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const sb = supabase.createClient(
+  'https://mwkdtasjkktqqlqefdhr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13a2R0YXNqa2t0cXFscWVmZGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxNzQsImV4cCI6MjA4OTQ1NTE3NH0.hdYLzfThbBsFpGnTCvB4CEpm0BX0ZVrd4eMKkn7T_5g'
+);
+let allData=[], currentFilter='all';
+
+function doLogin(){
+  if(document.getElementById('loginPw').value==='esg2026'){document.getElementById('loginOverlay').classList.add('hidden');loadAll();}
+  else document.getElementById('loginErr').style.display='block';
+}
+function doLogout(){document.getElementById('loginOverlay').classList.remove('hidden');document.getElementById('loginPw').value='';document.getElementById('loginErr').style.display='none';}
+
+function show(n,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const t={dashboard:'현황 대시보드',pipeline:'Agent 파이프라인',logs:'실행 로그',hitl:'HITL 검수 큐',data:'진단 결과 DB',quality:'품질 분석'};
+  document.getElementById('topTitle').textContent=t[n]||'';
+}
+
+async function loadAll(){
+  try{
+    const{data,error}=await sb.from('diagnosis_results').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    allData=data||[];
+    document.getElementById('lastUpdate').textContent='업데이트: '+new Date().toLocaleTimeString('ko-KR');
+    renderDashboard();renderData();renderHitl();renderLogs();renderQuality();
+  }catch(e){console.error(e);alert('데이터 로드 실패: '+e.message);}
+}
+
+function renderDashboard(){
+  const d=allData;
+  document.getElementById('sTotal').textContent=d.length;
+  document.getElementById('sAvg').textContent=d.length?(d.reduce((s,r)=>s+(r.score||0),0)/d.length).toFixed(1):'—';
+  document.getElementById('sCo').textContent=new Set(d.map(r=>r.company_name)).size;
+  const gc={};d.forEach(r=>{gc[r.grade]=(gc[r.grade]||0)+1;});
+  const top=Object.entries(gc).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('sGrade').textContent=top?top[0]:'—';
+
+  const grades=['A+','A0','B+','B0','B-','C','D'];
+  const clr={'A+':'var(--auto)','A0':'var(--auto)','B+':'var(--accent)','B0':'var(--accent)','B-':'var(--cond)','C':'var(--hitl)','D':'var(--hitl)'};
+  let gh='';
+  grades.forEach(g=>{const c=d.filter(r=>r.grade===g).length;if(!c)return;const p=d.length?((c/d.length)*100).toFixed(0):0;
+    gh+=`<div class="dist-row"><div class="dist-color" style="background:${clr[g]||'var(--g3)'}"></div><div class="dist-label">${g} (${c}건)</div><div class="dist-pct" style="color:${clr[g]||'var(--g3)'}">${p}%</div></div><div class="dist-bar"><div class="dist-fill" style="width:${p}%;background:${clr[g]||'var(--g3)'}"></div></div>`;
+  });
+  document.getElementById('gradeDist').innerHTML=gh||'<div class="loading">데이터 없음</div>';
+
+  const im={};d.forEach(r=>{const k=r.company_industry||'기타';if(!im[k])im[k]={s:0,c:0};im[k].s+=(r.score||0);im[k].c++;});
+  let ih='';Object.entries(im).sort((a,b)=>(b[1].s/b[1].c)-(a[1].s/a[1].c)).forEach(([k,v])=>{
+    const a=(v.s/v.c).toFixed(1),cls=a>=60?'hi':a>=40?'md':'lo';
+    ih+=`<div class="q-row"><div class="q-label">${k}</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
+  });
+  document.getElementById('indAvg').innerHTML=ih||'<div class="loading">데이터 없음</div>';
+
+  const eA=d.length?(d.reduce((s,r)=>s+(r.e_score||0),0)/d.length).toFixed(2):'—';
+  const sA=d.length?(d.reduce((s,r)=>s+(r.s_score||0),0)/d.length).toFixed(2):'—';
+  const gA=d.length?(d.reduce((s,r)=>s+(r.g_score||0),0)/d.length).toFixed(2):'—';
+  document.getElementById('esgAvg').innerHTML=`
+    <div class="q-row"><div class="q-label">E (환경)</div><div class="q-bar"><div class="q-fill hi" style="width:${(eA/5*100).toFixed(0)}%"></div></div><div class="q-score">${eA}</div></div>
+    <div class="q-row"><div class="q-label">S (사회)</div><div class="q-bar"><div class="q-fill hi" style="width:${(sA/5*100).toFixed(0)}%"></div></div><div class="q-score">${sA}</div></div>
+    <div class="q-row"><div class="q-label">G (거버넌스)</div><div class="q-bar"><div class="q-fill hi" style="width:${(gA/5*100).toFixed(0)}%"></div></div><div class="q-score">${gA}</div></div>`;
+}
+
+function renderData(f){
+  currentFilter=f||currentFilter;
+  const fd=currentFilter==='all'?allData:allData.filter(r=>(r.grade||'').startsWith(currentFilter));
+  document.getElementById('dataCount').textContent=fd.length;
+  const tb=document.getElementById('dataBody');
+  if(!fd.length){tb.innerHTML='<tr><td colspan="14" class="loading">데이터 없음</td></tr>';return;}
+  tb.innerHTML=fd.map((r,i)=>{
+    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    const gc=(r.grade||'').startsWith('A')?'a':(r.grade||'').startsWith('B')?'b':r.grade==='C'?'c':'d';
+    return`<tr><td style="font-family:var(--mono)">${fd.length-i}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td style="font-family:var(--mono);font-size:11px">${r.company_biz||''}</td><td>${r.company_size||''}</td><td>${r.company_industry||''}</td><td style="font-family:var(--mono);font-weight:700">${r.score??''}</td><td><span class="badge ${gc}">${r.grade||''}</span></td><td style="font-size:11px">${r.grade_label||''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);color:var(--auto)">${r.strong_count??''}</td><td style="font-family:var(--mono);color:var(--hitl)">${r.weak_count??''}</td></tr>`;
+  }).join('');
+}
+
+function renderHitl(){
+  const h=allData.filter(r=>(r.score||0)<50||['C','D'].includes(r.grade));
+  document.getElementById('hitlBadge').textContent=h.length;
+  const tb=document.getElementById('hitlBody');
+  if(!h.length){tb.innerHTML='<tr><td colspan="9" class="loading">검수 대기 건 없음 ✅</td></tr>';return;}
+  tb.innerHTML=h.map((r,i)=>{
+    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    return`<tr><td style="font-family:var(--mono)">${i+1}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td>${r.company_industry||''}</td><td><span class="badge d">${r.grade||''}</span></td><td style="font-family:var(--mono)">${r.score??''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td></tr>`;
+  }).join('');
+}
+
+function renderLogs(){
+  const el=document.getElementById('logList');
+  if(!allData.length){el.innerHTML='<div class="loading">데이터 없음</div>';return;}
+  el.innerHTML=allData.slice(0,30).map(r=>{
+    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
+    const isH=(r.score||0)<50||['C','D'].includes(r.grade);
+    return`<div class="log-entry"><div class="log-time">${dt}</div><div class="log-agent">${r.company_name||'—'}</div><div class="log-msg">등급 ${r.grade||'?'} · 점수 ${r.score??'?'} · E${r.e_score??'?'}/S${r.s_score??'?'}/G${r.g_score??'?'} · 강점${r.strong_count??0}/취약${r.weak_count??0}</div><div class="log-s ${isH?'esc':'ok'}">${isH?'escalate':'continue'}</div></div>`;
+  }).join('');
+}
+
+function renderQuality(){
+  const gm={};allData.forEach(r=>{const g=r.grade||'?';if(!gm[g])gm[g]={s:0,c:0};gm[g].s+=(r.score||0);gm[g].c++;});
+  let gh='';Object.entries(gm).sort((a,b)=>(b[1].s/b[1].c)-(a[1].s/a[1].c)).forEach(([g,v])=>{
+    const a=(v.s/v.c).toFixed(1),cls=a>=60?'hi':a>=40?'md':'lo';
+    gh+=`<div class="q-row"><div class="q-label">${g} (${v.c}건)</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
+  });
+  document.getElementById('gradeAvg').innerHTML=gh||'<div class="loading">데이터 없음</div>';
+  const aS=allData.length?(allData.reduce((s,r)=>s+(r.strong_count||0),0)/allData.length).toFixed(1):0;
+  const aW=allData.length?(allData.reduce((s,r)=>s+(r.weak_count||0),0)/allData.length).toFixed(1):0;
+  document.getElementById('swDist').innerHTML=`
+    <div class="q-row"><div class="q-label" style="width:120px">평균 강점 문항</div><div class="q-bar"><div class="q-fill hi" style="width:${(aS/30*100).toFixed(0)}%"></div></div><div class="q-score" style="color:var(--auto)">${aS}</div></div>
+    <div class="q-row"><div class="q-label" style="width:120px">평균 취약 문항</div><div class="q-bar"><div class="q-fill lo" style="width:${(aW/30*100).toFixed(0)}%"></div></div><div class="q-score" style="color:var(--hitl)">${aW}</div></div>
+    <div style="margin-top:12px;font-size:11px;color:var(--g3);">강점: 4점 이상 / 취약: 2점 이하 (30문항 기준)</div>`;
+}
+
+function exportCSV(){
+  if(!allData.length){alert('데이터가 없습니다.');return;}
+  const h=['진단일시','업체명','사업자번호','규모','업종','점수','등급','라벨','E','S','G','강점','취약'];
+  const rows=allData.map(r=>[r.created_at||'',r.company_name||'',r.company_biz||'',r.company_size||'',r.company_industry||'',r.score??'',r.grade||'',r.grade_label||'',r.e_score??'',r.s_score??'',r.g_score??'',r.strong_count??'',r.weak_count??'']);
+  const csv='\uFEFF'+[h,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`ESG_진단결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+
+document.getElementById('gradeFilter').addEventListener('click',e=>{
+  if(!e.target.classList.contains('f-btn'))return;
+  document.querySelectorAll('#gradeFilter .f-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');renderData(e.target.dataset.grade);
+});
+</script>
+</body>
+</html>
