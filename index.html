@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ESG Agent Orchestration | Admin</title>
+<title>ESG Agent Orchestration | Admin v9.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--navy:#002555;--navy-d:#001A3D;--navy-l:#E8EDF5;--navy-ll:#F4F7FB;--accent:#3F8CAA;--accent-l:#EBF4F8;--white:#fff;--off:#F5F7FA;--g1:#1C2340;--g2:#4A5270;--g3:#8890A8;--border:#DDE2EE;--auto:#00A050;--auto-l:#E6F9EF;--cond:#E07B00;--cond-l:#FFF4E5;--hitl:#C0392B;--hitl-l:#FDECEB;--font:"Noto Sans KR",sans-serif;--mono:"JetBrains Mono",monospace;--sidebar:230px;}
+:root{--navy:#002555;--navy-d:#001A3D;--navy-l:#E8EDF5;--navy-ll:#F4F7FB;--accent:#3F8CAA;--accent-l:#EBF4F8;--white:#fff;--off:#F5F7FA;--g1:#1C2340;--g2:#4A5270;--g3:#8890A8;--border:#DDE2EE;--auto:#00A050;--auto-l:#E6F9EF;--cond:#E07B00;--cond-l:#FFF4E5;--hitl:#C0392B;--hitl-l:#FDECEB;--future:#9B59B6;--future-l:#F4ECF7;--font:"Noto Sans KR",sans-serif;--mono:"JetBrains Mono",monospace;--sidebar:230px;}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;height:100vh;overflow:hidden;}
 .sidebar{width:var(--sidebar);background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
@@ -23,6 +23,8 @@ body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;
 .nav-item.active{background:rgba(255,255,255,.12);color:#fff;font-weight:700;}
 .nav-item .ni{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
 .nav-item .nb{font-size:10px;font-weight:700;background:var(--hitl);color:#fff;padding:1px 6px;border-radius:10px;margin-left:auto;}
+.nav-item .nb.accent{background:var(--accent);}
+.nav-item .nb.future{background:var(--future);}
 .sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);}
 .sidebar-version{font-size:10px;color:rgba(255,255,255,.3);margin-bottom:8px;}
 .sidebar-user{display:flex;align-items:center;gap:8px;}
@@ -39,6 +41,11 @@ body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;
 .btn-sm:hover{border-color:var(--accent);color:var(--accent);}
 .btn-sm.primary{background:var(--navy);border-color:var(--navy);color:#fff;}
 .btn-sm.primary:hover{background:var(--navy-d);}
+.btn-sm.accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-sm.accent:hover{background:#357A95;border-color:#357A95;}
+.btn-sm.danger{background:var(--hitl);border-color:var(--hitl);color:#fff;}
+.btn-sm.danger:hover{background:#A93226;border-color:#A93226;}
+.btn-sm:disabled{opacity:.5;cursor:not-allowed;}
 .content{flex:1;overflow-y:auto;padding:24px;}
 .panel{display:none;}.panel.active{display:block;}
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
@@ -46,21 +53,32 @@ body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
 .stat-card.navy::before{background:var(--navy);}.stat-card.accent::before{background:var(--accent);}
 .stat-card.auto::before{background:var(--auto);}.stat-card.hitl::before{background:var(--hitl);}
+.stat-card.future::before{background:var(--future);}
 .stat-label{font-size:11px;font-weight:600;color:var(--g3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
 .stat-value{font-size:28px;font-weight:900;color:var(--navy);font-family:var(--mono);}
 .stat-sub{font-size:11px;color:var(--g3);margin-top:4px;}
 .pipe-box{background:var(--white);border-radius:8px;border:1px solid var(--border);padding:24px;margin-bottom:24px;}
-.pipe-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;}
+.pipe-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.pipe-desc{font-size:11px;color:var(--g3);margin-bottom:18px;}
 .pipe{display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;}
-.agent-node{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 20px;border-radius:8px;border:2px solid var(--border);background:var(--white);min-width:130px;transition:all .3s;}
+.agent-node{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 16px;border-radius:8px;border:2px solid var(--border);background:var(--white);min-width:120px;transition:all .3s;position:relative;}
 .agent-node.done{border-color:var(--auto);}
-.a-icon{font-size:22px;}.a-name{font-size:11px;font-weight:700;color:var(--navy);text-align:center;}
+.agent-node.hitl{border-color:var(--hitl);background:var(--hitl-l);}
+.agent-node.future{border-color:var(--future);border-style:dashed;background:var(--future-l);opacity:.85;}
+.agent-node .stage-tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;background:var(--navy);color:#fff;padding:2px 8px;border-radius:8px;letter-spacing:.5px;}
+.agent-node.future .stage-tag{background:var(--future);}
+.agent-node.hitl .stage-tag{background:var(--hitl);}
+.a-icon{font-size:20px;margin-top:4px;}.a-name{font-size:11px;font-weight:700;color:var(--navy);text-align:center;line-height:1.3;}
 .a-stat{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
 .a-stat.done{background:var(--auto-l);color:var(--auto);}
+.a-stat.hitl{background:#fff;color:var(--hitl);border:1px solid var(--hitl);}
+.a-stat.future{background:#fff;color:var(--future);border:1px solid var(--future);}
 .a-time{font-size:10px;color:var(--g3);font-family:var(--mono);}
-.arrow{width:40px;height:2px;background:var(--border);position:relative;flex-shrink:0;}
+.arrow{width:30px;height:2px;background:var(--border);position:relative;flex-shrink:0;}
 .arrow::after{content:'▶';position:absolute;right:-6px;top:-7px;font-size:10px;color:var(--border);}
 .arrow.done{background:var(--auto);}.arrow.done::after{color:var(--auto);}
+.arrow.future{background:var(--future);background-image:linear-gradient(90deg,var(--future) 50%,transparent 50%);background-size:8px 2px;background-repeat:repeat-x;}
+.arrow.future::after{color:var(--future);}
 .q-section{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
 .q-card{background:var(--white);border-radius:8px;border:1px solid var(--border);padding:20px;}
 .q-card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;}
@@ -84,6 +102,9 @@ tr:hover td{background:var(--navy-ll);}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;}
 .badge.a{background:#EBF5EE;color:#1B7A3D;}.badge.b{background:var(--accent-l);color:var(--accent);}
 .badge.c{background:var(--cond-l);color:var(--cond);}.badge.d{background:var(--hitl-l);color:var(--hitl);}
+.badge.pending{background:var(--cond-l);color:var(--cond);}
+.badge.completed{background:var(--auto-l);color:var(--auto);}
+.badge.expired{background:#EEE;color:var(--g3);}
 .dist-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
 .dist-color{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
 .dist-label{font-size:12px;color:var(--g2);flex:1;}
@@ -109,14 +130,59 @@ tr:hover td{background:var(--navy-ll);}
 .login-btn:hover{background:var(--navy-d);}
 .login-error{font-size:12px;color:var(--hitl);margin-top:10px;display:none;}
 .loading{text-align:center;padding:40px;color:var(--g3);font-size:13px;}
+
+/* ─── v9.0 신규: Verify (Stage 4 검증 링크 관리) 패널 ─── */
+.verify-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:24px;}
+@media(max-width:1100px){.verify-grid{grid-template-columns:1fr;}}
+.verify-help{background:var(--accent-l);border:1px solid #C5DDE6;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:12px;color:var(--g2);line-height:1.6;}
+.verify-help b{color:var(--navy);}
+.verify-help kbd{background:var(--white);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:10px;font-family:var(--mono);color:var(--navy);}
+.sample-row{cursor:pointer;}
+.sample-row.selected td{background:var(--accent-l) !important;}
+.sample-row td:first-child{padding-left:8px;}
+.token-input{font-family:var(--mono);font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:3px;background:var(--navy-ll);color:var(--navy);width:120px;}
+.copy-btn{padding:3px 10px;font-size:10px;font-weight:700;border:none;border-radius:3px;background:var(--accent);color:#fff;cursor:pointer;font-family:var(--font);transition:background .15s;}
+.copy-btn:hover{background:#357A95;}
+.copy-btn.copied{background:var(--auto);}
+.verify-form{background:var(--accent-l);border-radius:8px;padding:16px;border:1px solid #C5DDE6;}
+.verify-form h4{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.verify-form input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--font);margin-bottom:8px;background:var(--white);}
+.verify-form input:focus{outline:none;border-color:var(--accent);}
+.verify-form-row{display:flex;gap:8px;align-items:center;}
+.verify-form-row input{margin-bottom:0;flex:1;}
+.selected-info{font-size:12px;color:var(--g2);padding:10px;background:var(--white);border-radius:4px;margin-bottom:10px;}
+.selected-info.empty{color:var(--g3);font-style:italic;text-align:center;}
+.selected-info b{color:var(--navy);}
+
+/* ─── 응답 미리보기 모달 ─── */
+.modal-overlay{position:fixed;inset:0;z-index:8000;background:rgba(0,21,55,.55);display:none;align-items:center;justify-content:center;padding:24px;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--white);border-radius:10px;width:100%;max-width:760px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.modal-head{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:14px;font-weight:700;color:var(--navy);}
+.modal-close{background:none;border:none;font-size:20px;color:var(--g3);cursor:pointer;padding:0 6px;}
+.modal-close:hover{color:var(--navy);}
+.modal-body{padding:20px 22px;overflow-y:auto;}
+.resp-section{margin-bottom:18px;}
+.resp-section-title{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.resp-row{display:flex;gap:12px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12px;}
+.resp-key{width:160px;color:var(--g3);flex-shrink:0;}
+.resp-val{color:var(--g1);font-weight:500;flex:1;}
+.score-bar-wrap{display:flex;align-items:center;gap:8px;flex:1;}
+.score-bar-wrap .b{flex:1;height:6px;background:var(--navy-l);border-radius:3px;overflow:hidden;}
+.score-bar-wrap .f{height:100%;background:var(--accent);}
+.score-bar-wrap .v{font-family:var(--mono);font-weight:700;color:var(--navy);width:30px;text-align:right;}
+
 @media(max-width:1024px){.stats-row{grid-template-columns:repeat(2,1fr);}.q-section{grid-template-columns:1fr;}}
 @media(max-width:768px){.sidebar{display:none;}.stats-row{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
+
+<!-- ─── 로그인 ─── -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <div class="login-logo">ESG-AACS</div>
+    <div class="login-logo">ESG-AACS · v9.0</div>
     <div class="login-title">Agent Orchestration</div>
     <div class="login-desc">ESG 자가진단 AI 에이전트 관리 시스템</div>
     <label class="login-label">관리자 비밀번호</label>
@@ -125,25 +191,49 @@ tr:hover td{background:var(--navy-ll);}
     <div class="login-error" id="loginErr">비밀번호가 올바르지 않습니다.</div>
   </div>
 </div>
+
+<!-- ─── 사이드바 (v9.0: HITL 검수 섹션에 'Stage 4 검증 링크' 메뉴 추가) ─── -->
 <nav class="sidebar">
-  <div class="sidebar-header"><div class="sidebar-logo">ESG-AACS</div><div class="sidebar-title">Agent Orchestration</div><div class="sidebar-sub">관리자 대시보드 v8.0</div></div>
-  <div class="nav-section"><div class="nav-label">모니터링</div>
+  <div class="sidebar-header">
+    <div class="sidebar-logo">ESG-AACS</div>
+    <div class="sidebar-title">Agent Orchestration</div>
+    <div class="sidebar-sub">관리자 대시보드 v9.0</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-label">모니터링</div>
     <button class="nav-item active" onclick="show('dashboard',this)"><span class="ni">📊</span> 현황 대시보드</button>
     <button class="nav-item" onclick="show('pipeline',this)"><span class="ni">🔗</span> Agent 파이프라인</button>
     <button class="nav-item" onclick="show('logs',this)"><span class="ni">📋</span> 실행 로그</button>
   </div>
-  <div class="nav-section"><div class="nav-label">HITL 검수</div>
+
+  <div class="nav-section">
+    <div class="nav-label">Stage 4 · HITL 검수</div>
     <button class="nav-item" onclick="show('hitl',this)"><span class="ni">🔴</span> HITL 큐 <span class="nb" id="hitlBadge">0</span></button>
+    <button class="nav-item" onclick="show('verify',this)"><span class="ni">📨</span> 검증 링크 관리 <span class="nb accent" id="verifyBadge">0</span></button>
   </div>
-  <div class="nav-section"><div class="nav-label">데이터</div>
+
+  <div class="nav-section">
+    <div class="nav-label">데이터</div>
     <button class="nav-item" onclick="show('data',this)"><span class="ni">🗄️</span> 진단 결과 DB</button>
     <button class="nav-item" onclick="show('quality',this)"><span class="ni">📈</span> 품질 분석</button>
   </div>
+
+  <div class="nav-section">
+    <div class="nav-label">Stage 5 · 학습 (향후)</div>
+    <button class="nav-item" onclick="show('learn',this)"><span class="ni">🧠</span> Learn (준비 중) <span class="nb future">soon</span></button>
+  </div>
+
   <div class="sidebar-footer">
     <div class="sidebar-version">ESG_CLAUDE.md v1.2 · Supabase</div>
-    <div class="sidebar-user"><div class="avatar">관</div><div style="flex:1"><div class="user-name">관리자</div><div class="user-role">admin</div></div><button class="logout-btn" onclick="doLogout()">⏻</button></div>
+    <div class="sidebar-user">
+      <div class="avatar">관</div>
+      <div style="flex:1"><div class="user-name">관리자</div><div class="user-role">admin</div></div>
+      <button class="logout-btn" onclick="doLogout()">⏻</button>
+    </div>
   </div>
 </nav>
+
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="topTitle">현황 대시보드</div>
@@ -153,47 +243,62 @@ tr:hover td{background:var(--navy-ll);}
       <button class="btn-sm primary" onclick="exportCSV()">📥 CSV</button>
     </div>
   </div>
+
   <div class="content">
 
-    <!-- DASHBOARD -->
+    <!-- ═══════════════ DASHBOARD ═══════════════ -->
     <div class="panel active" id="panel-dashboard">
       <div class="stats-row">
         <div class="stat-card navy"><div class="stat-label">총 진단 건수</div><div class="stat-value" id="sTotal">—</div><div class="stat-sub">전체 누적</div></div>
         <div class="stat-card auto"><div class="stat-label">평균 종합 점수</div><div class="stat-value" id="sAvg">—</div><div class="stat-sub">전체 평균</div></div>
-        <div class="stat-card accent"><div class="stat-label">참여 업체 수</div><div class="stat-value" id="sCo">—</div><div class="stat-sub">고유 업체</div></div>
-        <div class="stat-card hitl"><div class="stat-label">최다 등급</div><div class="stat-value" id="sGrade">—</div><div class="stat-sub">최빈 등급</div></div>
+        <div class="stat-card accent"><div class="stat-label">검증 링크 발급</div><div class="stat-value" id="sInv">—</div><div class="stat-sub">Stage 4 HITL</div></div>
+        <div class="stat-card hitl"><div class="stat-label">전문가 응답</div><div class="stat-value" id="sResp">—</div><div class="stat-sub">완료된 설문</div></div>
       </div>
-      <div class="pipe-box"><div class="pipe-title">Agent Orchestration 파이프라인</div>
+
+      <div class="pipe-box">
+        <div class="pipe-title">Agentic AI 5단계 ESG 컨설팅 파이프라인</div>
+        <div class="pipe-desc">Perceive → Reason → Plan+Act → Verify → Learn 순환 구조 (본 연구 범위: Stage 1~4 / Stage 5 향후 연구)</div>
         <div class="pipe">
-          <div class="agent-node done"><div class="a-icon">🎯</div><div class="a-name">Stage 2<br>prediction</div><div class="a-stat done">GBM+SHAP</div><div class="a-time">~1.2s</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 1</span><div class="a-icon">📥</div><div class="a-name">Perceive<br>인지</div><div class="a-stat done">자가진단</div><div class="a-time">30문항</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">📝</div><div class="a-name">Stage 3<br>consulting</div><div class="a-stat done">RAG+KG</div><div class="a-time">~8.5s</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 2</span><div class="a-icon">🎯</div><div class="a-name">Reason<br>추론</div><div class="a-stat done">GBM+SHAP</div><div class="a-time">~1.2s</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">📎</div><div class="a-name">Stage 3-E<br>evidence</div><div class="a-stat done">법규검증</div><div class="a-time">~3.2s</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 3</span><div class="a-icon">📝</div><div class="a-name">Plan+Act<br>계획·실행</div><div class="a-stat done">RAG+KG</div><div class="a-time">~8.5s</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">👤</div><div class="a-name">Stage 4<br>review</div><div class="a-stat done">HITL</div><div class="a-time">판정</div></div>
+          <div class="agent-node hitl"><span class="stage-tag">STAGE 4</span><div class="a-icon">👤</div><div class="a-name">Verify<br>검증</div><div class="a-stat hitl">HITL</div><div class="a-time">전문가</div></div>
+          <div class="arrow future"></div>
+          <div class="agent-node future"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">Learn<br>학습</div><div class="a-stat future">준비 중</div><div class="a-time">향후 연구</div></div>
         </div>
       </div>
+
       <div class="q-section">
         <div class="q-card"><div class="q-card-title">등급 분포</div><div id="gradeDist"><div class="loading">로딩 중...</div></div></div>
         <div class="q-card"><div class="q-card-title">업종별 평균 점수</div><div id="indAvg"><div class="loading">로딩 중...</div></div></div>
       </div>
+
       <div class="q-card" style="margin-bottom:24px;"><div class="q-card-title">E / S / G 영역별 평균 점수</div><div id="esgAvg"><div class="loading">로딩 중...</div></div></div>
     </div>
 
-    <!-- PIPELINE -->
+    <!-- ═══════════════ PIPELINE ═══════════════ -->
     <div class="panel" id="panel-pipeline">
-      <div class="pipe-box"><div class="pipe-title">Harness 제어 흐름 (ESG_CLAUDE.md v1.2)</div>
+      <div class="pipe-box">
+        <div class="pipe-title">Agentic AI 5단계 — Harness 제어 흐름 (ESG_CLAUDE.md v1.2)</div>
+        <div class="pipe-desc">각 Stage는 conf/quality 임계값에 따라 continue · retry · escalate 상태를 반환합니다.</div>
         <div class="pipe">
-          <div class="agent-node done"><div class="a-icon">🎯</div><div class="a-name">prediction</div><div class="a-stat done">continue</div><div class="a-time">conf ≥ 0.7</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 1</span><div class="a-icon">📥</div><div class="a-name">perceive</div><div class="a-stat done">continue</div><div class="a-time">유효성 ✓</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">📝</div><div class="a-name">consulting</div><div class="a-stat done">continue</div><div class="a-time">Q ≥ 6.0</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 2</span><div class="a-icon">🎯</div><div class="a-name">prediction</div><div class="a-stat done">continue</div><div class="a-time">conf ≥ 0.7</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">📎</div><div class="a-name">evidence</div><div class="a-stat done">continue</div><div class="a-time">법규 ✓</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 3</span><div class="a-icon">📝</div><div class="a-name">consulting</div><div class="a-stat done">continue</div><div class="a-time">Q ≥ 6.0</div></div>
           <div class="arrow done"></div>
-          <div class="agent-node done"><div class="a-icon">👤</div><div class="a-name">review</div><div class="a-stat done">auto_confirm</div><div class="a-time">Q ≥ 8.0</div></div>
+          <div class="agent-node done"><span class="stage-tag">STAGE 3-E</span><div class="a-icon">📎</div><div class="a-name">evidence</div><div class="a-stat done">continue</div><div class="a-time">법규 ✓</div></div>
+          <div class="arrow done"></div>
+          <div class="agent-node hitl"><span class="stage-tag">STAGE 4</span><div class="a-icon">👤</div><div class="a-name">review</div><div class="a-stat hitl">HITL</div><div class="a-time">전문가 검수</div></div>
+          <div class="arrow future"></div>
+          <div class="agent-node future"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">learn</div><div class="a-stat future">준비 중</div><div class="a-time">향후 연구</div></div>
         </div>
       </div>
+
       <div class="q-section">
         <div class="q-card"><div class="q-card-title">상태 반환 모델</div>
           <div class="q-row"><div class="q-label" style="width:90px">continue</div><div class="q-bar"><div class="q-fill hi" style="width:87%"></div></div><div class="q-score" style="color:var(--auto)">87%</div></div>
@@ -208,14 +313,14 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
-    <!-- LOGS -->
+    <!-- ═══════════════ LOGS ═══════════════ -->
     <div class="panel" id="panel-logs">
       <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">Agent 실행 로그</div></div>
         <div style="max-height:500px;overflow-y:auto;" id="logList"><div class="loading">로딩 중...</div></div>
       </div>
     </div>
 
-    <!-- HITL -->
+    <!-- ═══════════════ HITL ═══════════════ -->
     <div class="panel" id="panel-hitl">
       <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">HITL 검수 큐 (점수 &lt; 50 또는 등급 C·D)</div></div>
         <table><thead><tr><th>NO</th><th>기업</th><th>업종</th><th>등급</th><th>점수</th><th>E</th><th>S</th><th>G</th><th>진단일</th></tr></thead>
@@ -223,7 +328,92 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
-    <!-- DATA -->
+    <!-- ═══════════════ VERIFY (v9.0 신규) ═══════════════ -->
+    <div class="panel" id="panel-verify">
+      <div class="verify-help">
+        <b>📨 Stage 4 검증 링크 관리</b> — 진단 결과 중 전문가 검수가 필요한 샘플을 선택하여 설문조사 링크를 발급합니다.
+        설문 사이트는 <kbd>SURVEY_BASE_URL</kbd> + <kbd>?token=...</kbd> 형식의 URL로 접근하며, 응답은 자동으로 본 어드민에 수집됩니다.
+        설문 사이트 도메인은 <code style="background:var(--white);padding:1px 4px;border-radius:2px;font-family:var(--mono);">window.SURVEY_BASE_URL</code> 변수로 설정됩니다 (현재: <code id="curBaseUrl" style="font-family:var(--mono);color:var(--accent);">설정 전</code>).
+      </div>
+
+      <!-- 도메인 설정 (임시) -->
+      <div class="tbl-box" style="margin-bottom:16px;">
+        <div class="tbl-head" style="border-bottom:none;padding:12px 20px;">
+          <div class="tbl-title">설문 사이트 Base URL</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input id="baseUrlInput" type="text" placeholder="https://your-survey-site.vercel.app" style="font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:3px;width:340px;">
+            <button class="btn-sm primary" onclick="saveBaseUrl()">저장</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="verify-grid">
+        <!-- 좌측: 샘플 선택 -->
+        <div class="tbl-box" style="margin-bottom:0;">
+          <div class="tbl-head">
+            <div class="tbl-title">진단 결과 — 검증 대상 선택</div>
+            <div class="tbl-filter">
+              <button class="f-btn active" data-vfilter="all">전체</button>
+              <button class="f-btn" data-vfilter="hitl">HITL 후보</button>
+              <button class="f-btn" data-vfilter="A">A</button>
+              <button class="f-btn" data-vfilter="B">B</button>
+              <button class="f-btn" data-vfilter="C">C·D</button>
+            </div>
+          </div>
+          <div style="max-height:520px;overflow-y:auto;">
+            <table>
+              <thead><tr><th style="width:24px"></th><th>업체명</th><th>업종</th><th>등급</th><th>점수</th><th>진단일</th></tr></thead>
+              <tbody id="sampleBody"><tr><td colspan="6" class="loading">로딩 중...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 우측: 발급 폼 + 발급 내역 -->
+        <div>
+          <div class="verify-form" style="margin-bottom:16px;">
+            <h4>새 검증 링크 발급</h4>
+            <div id="selectedSample" class="selected-info empty">왼쪽에서 진단 샘플을 선택하세요</div>
+            <input id="invExpertName" type="text" placeholder="대상 전문가 이름 (선택)">
+            <input id="invExpertEmail" type="email" placeholder="이메일 (선택)">
+            <input id="invNotes" type="text" placeholder="메모 (선택)">
+            <button class="btn-sm accent" id="issueBtn" onclick="issueInvitation()" disabled style="width:100%;padding:9px;font-size:12px;">🔗 검증 링크 발급</button>
+          </div>
+
+          <div class="tbl-box" style="margin-bottom:0;">
+            <div class="tbl-head">
+              <div class="tbl-title">발급 내역</div>
+              <div class="tbl-filter">
+                <button class="f-btn active" data-ifilter="all">전체</button>
+                <button class="f-btn" data-ifilter="pending">대기</button>
+                <button class="f-btn" data-ifilter="completed">완료</button>
+              </div>
+            </div>
+            <div style="max-height:340px;overflow-y:auto;">
+              <table>
+                <thead><tr><th>업체</th><th>전문가</th><th>상태</th><th>발급일</th><th style="width:90px">링크</th></tr></thead>
+                <tbody id="invBody"><tr><td colspan="5" class="loading">로딩 중...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 응답 목록 -->
+      <div class="tbl-box">
+        <div class="tbl-head">
+          <div class="tbl-title">전문가 응답 — <span id="respCount">0</span>건</div>
+          <div style="font-size:11px;color:var(--g3);">응답을 클릭하면 상세 내용을 확인할 수 있습니다.</div>
+        </div>
+        <div style="max-height:380px;overflow-y:auto;">
+          <table>
+            <thead><tr><th>NO</th><th>업체</th><th>전문가</th><th>경력</th><th>5차원 평균</th><th>품질 수준</th><th>응답일시</th></tr></thead>
+            <tbody id="respBody"><tr><td colspan="7" class="loading">로딩 중...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ DATA ═══════════════ -->
     <div class="panel" id="panel-data">
       <div class="tbl-box"><div class="tbl-head">
         <div class="tbl-title">진단 결과 DB — <span id="dataCount">0</span>건</div>
@@ -241,7 +431,7 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
-    <!-- QUALITY -->
+    <!-- ═══════════════ QUALITY ═══════════════ -->
     <div class="panel" id="panel-quality">
       <div class="q-section">
         <div class="q-card"><div class="q-card-title">등급별 평균 점수</div><div id="gradeAvg"><div class="loading">로딩 중...</div></div></div>
@@ -249,137 +439,531 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
+    <!-- ═══════════════ LEARN (Stage 5 · 향후 연구) ═══════════════ -->
+    <div class="panel" id="panel-learn">
+      <div class="pipe-box" style="border-left:4px solid var(--future);">
+        <div class="pipe-title" style="color:var(--future);">🧠 Stage 5 — Learn (학습)</div>
+        <div class="pipe-desc"><b>본 연구 범위 외 · 향후 연구 과제</b> — Stage 4 HITL 검수 결과를 학습 데이터로 활용하여 Agent를 점진적으로 개선하는 단계입니다. 시스템 구조는 본 어드민에 미리 구축되어 있으며, 충분한 HITL 응답이 축적된 후 활성화될 예정입니다.</div>
+
+        <div class="q-section" style="margin-top:18px;">
+          <div class="q-card" style="border-left:3px solid var(--future);">
+            <div class="q-card-title">학습 파이프라인 (계획)</div>
+            <div style="font-size:12px;color:var(--g2);line-height:1.8;">
+              <div>📥 <b>1. Collect</b> — Stage 4 HITL 응답 + AI 자동채점 결과 수집</div>
+              <div>🔍 <b>2. Compare</b> — 차원별 (전문가 vs AI) 일치도 분석</div>
+              <div>📊 <b>3. Annotate</b> — 불일치 패턴을 학습 라벨로 변환</div>
+              <div>🎓 <b>4. Fine-tune</b> — Agent 2 (RAG+KG) 프롬프트·임계값 조정</div>
+              <div>✅ <b>5. Validate</b> — 재배포 후 품질 향상 측정</div>
+            </div>
+          </div>
+          <div class="q-card" style="border-left:3px solid var(--future);">
+            <div class="q-card-title">현재 학습 데이터 적재 현황</div>
+            <div class="q-row"><div class="q-label" style="width:120px">전문가 응답</div><div class="q-bar"><div class="q-fill" id="learnRespBar" style="width:0%;background:var(--future);"></div></div><div class="q-score" id="learnRespVal" style="color:var(--future)">—</div></div>
+            <div class="q-row"><div class="q-label" style="width:120px">자동채점 매칭</div><div class="q-bar"><div class="q-fill" id="learnMatchBar" style="width:0%;background:var(--future);"></div></div><div class="q-score" id="learnMatchVal" style="color:var(--future)">—</div></div>
+            <div style="margin-top:14px;font-size:11px;color:var(--g3);line-height:1.6;">
+              ※ 학습 활성화 임계값: 전문가 응답 <b>n ≥ 30</b><br>
+              ※ 충분한 표본 확보 시 후속 연구에서 fine-tuning 단계 진행 예정
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── 응답 상세 모달 ─── -->
+<div class="modal-overlay" id="respModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="respModalTitle">전문가 응답 상세</div>
+      <button class="modal-close" onclick="closeRespModal()">×</button>
+    </div>
+    <div class="modal-body" id="respModalBody"></div>
   </div>
 </div>
 
 <script>
-const sb = supabase.createClient(
-  'https://mwkdtasjkktqqlqefdhr.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13a2R0YXNqa2t0cXFscWVmZGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxNzQsImV4cCI6MjA4OTQ1NTE3NH0.hdYLzfThbBsFpGnTCvB4CEpm0BX0ZVrd4eMKkn7T_5g'
-);
-let allData=[], currentFilter='all';
+// ═══════════════════════════════════════════════════════════════════════════
+// ESG Agent Orchestration v9.0
+// ═══════════════════════════════════════════════════════════════════════════
 
+// Supabase 연결 (CDN 로드 실패 시 안전하게 폴백)
+let sb = null;
+try {
+  if (typeof supabase !== 'undefined' && supabase.createClient) {
+    sb = supabase.createClient(
+      'https://mwkdtasjkktqqlqefdhr.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13a2R0YXNqa2t0cXFscWVmZGhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NzkxNzQsImV4cCI6MjA4OTQ1NTE3NH0.hdYLzfThbBsFpGnTCvB4CEpm0BX0ZVrd4eMKkn7T_5g'
+    );
+  } else {
+    console.warn('[ESG-AACS] Supabase SDK not loaded — 네트워크 또는 CDN 차단 확인 필요');
+  }
+} catch (e) {
+  console.error('[ESG-AACS] Supabase 초기화 실패:', e);
+}
+
+// 전역 상태
+let allData = [];           // diagnosis_results
+let allInvitations = [];    // survey_invitations
+let allResponses = [];      // survey_responses
+let currentFilter = 'all';
+let currentVFilter = 'all'; // verify 패널 샘플 필터
+let currentIFilter = 'all'; // verify 패널 발급내역 필터
+let selectedSampleId = null;
+
+// 설문 사이트 Base URL (localStorage에 저장)
+const BASE_URL_KEY = 'esg_survey_base_url';
+function getBaseUrl(){ return localStorage.getItem(BASE_URL_KEY) || ''; }
+function saveBaseUrl(){
+  const v = document.getElementById('baseUrlInput').value.trim().replace(/\/$/,'');
+  if(v && !/^https?:\/\//.test(v)){ alert('URL은 http:// 또는 https://로 시작해야 합니다.'); return; }
+  localStorage.setItem(BASE_URL_KEY, v);
+  document.getElementById('curBaseUrl').textContent = v || '설정 전';
+  document.getElementById('curBaseUrl').style.color = v ? 'var(--auto)' : 'var(--accent)';
+  alert('저장되었습니다.');
+}
+
+// ─── 인증 ─────────────────────────────────────────────
 function doLogin(){
-  if(document.getElementById('loginPw').value==='esg2026'){document.getElementById('loginOverlay').classList.add('hidden');loadAll();}
-  else document.getElementById('loginErr').style.display='block';
+  if(document.getElementById('loginPw').value === 'esg2026'){
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initBaseUrlUI();
+    loadAll();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
 }
-function doLogout(){document.getElementById('loginOverlay').classList.remove('hidden');document.getElementById('loginPw').value='';document.getElementById('loginErr').style.display='none';}
-
-function show(n,el){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+n).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-  if(el)el.classList.add('active');
-  const t={dashboard:'현황 대시보드',pipeline:'Agent 파이프라인',logs:'실행 로그',hitl:'HITL 검수 큐',data:'진단 결과 DB',quality:'품질 분석'};
-  document.getElementById('topTitle').textContent=t[n]||'';
+function doLogout(){
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginPw').value = '';
+  document.getElementById('loginErr').style.display = 'none';
 }
 
+function initBaseUrlUI(){
+  const v = getBaseUrl();
+  document.getElementById('baseUrlInput').value = v;
+  document.getElementById('curBaseUrl').textContent = v || '설정 전';
+  document.getElementById('curBaseUrl').style.color = v ? 'var(--auto)' : 'var(--accent)';
+}
+
+// ─── 패널 전환 ────────────────────────────────────────
+function show(n, el){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const t = {
+    dashboard:'현황 대시보드', pipeline:'Agent 파이프라인', logs:'실행 로그',
+    hitl:'HITL 검수 큐', verify:'Stage 4 검증 링크 관리',
+    data:'진단 결과 DB', quality:'품질 분석',
+    learn:'Stage 5 · Learn (향후 연구)'
+  };
+  document.getElementById('topTitle').textContent = t[n] || '';
+}
+
+// ─── 데이터 로드 ──────────────────────────────────────
 async function loadAll(){
-  try{
-    const{data,error}=await sb.from('diagnosis_results').select('*').order('created_at',{ascending:false});
-    if(error)throw error;
-    allData=data||[];
-    document.getElementById('lastUpdate').textContent='업데이트: '+new Date().toLocaleTimeString('ko-KR');
-    renderDashboard();renderData();renderHitl();renderLogs();renderQuality();
-  }catch(e){console.error(e);alert('데이터 로드 실패: '+e.message);}
+  if (!sb) {
+    alert('Supabase 연결이 초기화되지 않았습니다.\n네트워크 연결을 확인하고 페이지를 새로고침해주세요.');
+    return;
+  }
+  try {
+    // 1. 진단 결과
+    const { data: diag, error: e1 } = await sb.from('diagnosis_results')
+      .select('*').order('created_at', { ascending:false });
+    if(e1) throw e1;
+    allData = diag || [];
+
+    // 2. 검증 초대 (v9 신규 테이블 — 없으면 빈 배열)
+    let inv = [];
+    try {
+      const { data, error } = await sb.from('survey_invitations')
+        .select('*').order('created_at', { ascending:false });
+      if(!error) inv = data || [];
+    } catch(_){}
+    allInvitations = inv;
+
+    // 3. 응답 (v9 신규 테이블 — 없으면 빈 배열)
+    let resp = [];
+    try {
+      const { data, error } = await sb.from('survey_responses')
+        .select('*').order('submitted_at', { ascending:false });
+      if(!error) resp = data || [];
+    } catch(_){}
+    allResponses = resp;
+
+    document.getElementById('lastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
+
+    renderDashboard();
+    renderData();
+    renderHitl();
+    renderLogs();
+    renderQuality();
+    renderVerify();
+    renderLearn();
+  } catch(e){
+    console.error(e);
+    alert('데이터 로드 실패: ' + e.message);
+  }
 }
 
+// ─── 대시보드 ─────────────────────────────────────────
 function renderDashboard(){
-  const d=allData;
-  document.getElementById('sTotal').textContent=d.length;
-  document.getElementById('sAvg').textContent=d.length?(d.reduce((s,r)=>s+(r.score||0),0)/d.length).toFixed(1):'—';
-  document.getElementById('sCo').textContent=new Set(d.map(r=>r.company_name)).size;
-  const gc={};d.forEach(r=>{gc[r.grade]=(gc[r.grade]||0)+1;});
-  const top=Object.entries(gc).sort((a,b)=>b[1]-a[1])[0];
-  document.getElementById('sGrade').textContent=top?top[0]:'—';
+  const d = allData;
+  document.getElementById('sTotal').textContent = d.length;
+  document.getElementById('sAvg').textContent = d.length ? (d.reduce((s,r) => s+(r.score||0), 0) / d.length).toFixed(1) : '—';
+  document.getElementById('sInv').textContent = allInvitations.length;
+  document.getElementById('sResp').textContent = allResponses.length;
 
-  const grades=['A+','A0','B+','B0','B-','C','D'];
-  const clr={'A+':'var(--auto)','A0':'var(--auto)','B+':'var(--accent)','B0':'var(--accent)','B-':'var(--cond)','C':'var(--hitl)','D':'var(--hitl)'};
-  let gh='';
-  grades.forEach(g=>{const c=d.filter(r=>r.grade===g).length;if(!c)return;const p=d.length?((c/d.length)*100).toFixed(0):0;
-    gh+=`<div class="dist-row"><div class="dist-color" style="background:${clr[g]||'var(--g3)'}"></div><div class="dist-label">${g} (${c}건)</div><div class="dist-pct" style="color:${clr[g]||'var(--g3)'}">${p}%</div></div><div class="dist-bar"><div class="dist-fill" style="width:${p}%;background:${clr[g]||'var(--g3)'}"></div></div>`;
+  const grades = ['A+','A0','B+','B0','B-','C','D'];
+  const clr = {'A+':'var(--auto)','A0':'var(--auto)','B+':'var(--accent)','B0':'var(--accent)','B-':'var(--cond)','C':'var(--hitl)','D':'var(--hitl)'};
+  let gh = '';
+  grades.forEach(g => {
+    const c = d.filter(r => r.grade === g).length;
+    if(!c) return;
+    const p = d.length ? ((c/d.length)*100).toFixed(0) : 0;
+    gh += `<div class="dist-row"><div class="dist-color" style="background:${clr[g]||'var(--g3)'}"></div><div class="dist-label">${g} (${c}건)</div><div class="dist-pct" style="color:${clr[g]||'var(--g3)'}">${p}%</div></div><div class="dist-bar"><div class="dist-fill" style="width:${p}%;background:${clr[g]||'var(--g3)'}"></div></div>`;
   });
-  document.getElementById('gradeDist').innerHTML=gh||'<div class="loading">데이터 없음</div>';
+  document.getElementById('gradeDist').innerHTML = gh || '<div class="loading">데이터 없음</div>';
 
-  const im={};d.forEach(r=>{const k=r.company_industry||'기타';if(!im[k])im[k]={s:0,c:0};im[k].s+=(r.score||0);im[k].c++;});
-  let ih='';Object.entries(im).sort((a,b)=>(b[1].s/b[1].c)-(a[1].s/a[1].c)).forEach(([k,v])=>{
-    const a=(v.s/v.c).toFixed(1),cls=a>=60?'hi':a>=40?'md':'lo';
-    ih+=`<div class="q-row"><div class="q-label">${k}</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
+  const im = {};
+  d.forEach(r => { const k = r.company_industry||'기타'; if(!im[k]) im[k]={s:0,c:0}; im[k].s+=(r.score||0); im[k].c++; });
+  let ih = '';
+  Object.entries(im).sort((a,b) => (b[1].s/b[1].c) - (a[1].s/a[1].c)).forEach(([k,v]) => {
+    const a = (v.s/v.c).toFixed(1), cls = a>=60?'hi':a>=40?'md':'lo';
+    ih += `<div class="q-row"><div class="q-label">${k}</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
   });
-  document.getElementById('indAvg').innerHTML=ih||'<div class="loading">데이터 없음</div>';
+  document.getElementById('indAvg').innerHTML = ih || '<div class="loading">데이터 없음</div>';
 
-  const eA=d.length?(d.reduce((s,r)=>s+(r.e_score||0),0)/d.length).toFixed(2):'—';
-  const sA=d.length?(d.reduce((s,r)=>s+(r.s_score||0),0)/d.length).toFixed(2):'—';
-  const gA=d.length?(d.reduce((s,r)=>s+(r.g_score||0),0)/d.length).toFixed(2):'—';
-  document.getElementById('esgAvg').innerHTML=`
+  const eA = d.length ? (d.reduce((s,r) => s+(r.e_score||0), 0)/d.length).toFixed(2) : '—';
+  const sA = d.length ? (d.reduce((s,r) => s+(r.s_score||0), 0)/d.length).toFixed(2) : '—';
+  const gA = d.length ? (d.reduce((s,r) => s+(r.g_score||0), 0)/d.length).toFixed(2) : '—';
+  document.getElementById('esgAvg').innerHTML = `
     <div class="q-row"><div class="q-label">E (환경)</div><div class="q-bar"><div class="q-fill hi" style="width:${(eA/5*100).toFixed(0)}%"></div></div><div class="q-score">${eA}</div></div>
     <div class="q-row"><div class="q-label">S (사회)</div><div class="q-bar"><div class="q-fill hi" style="width:${(sA/5*100).toFixed(0)}%"></div></div><div class="q-score">${sA}</div></div>
     <div class="q-row"><div class="q-label">G (거버넌스)</div><div class="q-bar"><div class="q-fill hi" style="width:${(gA/5*100).toFixed(0)}%"></div></div><div class="q-score">${gA}</div></div>`;
 }
 
+// ─── 진단 결과 DB ────────────────────────────────────
 function renderData(f){
-  currentFilter=f||currentFilter;
-  const fd=currentFilter==='all'?allData:allData.filter(r=>(r.grade||'').startsWith(currentFilter));
-  document.getElementById('dataCount').textContent=fd.length;
-  const tb=document.getElementById('dataBody');
-  if(!fd.length){tb.innerHTML='<tr><td colspan="14" class="loading">데이터 없음</td></tr>';return;}
-  tb.innerHTML=fd.map((r,i)=>{
-    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    const gc=(r.grade||'').startsWith('A')?'a':(r.grade||'').startsWith('B')?'b':r.grade==='C'?'c':'d';
-    return`<tr><td style="font-family:var(--mono)">${fd.length-i}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td style="font-family:var(--mono);font-size:11px">${r.company_biz||''}</td><td>${r.company_size||''}</td><td>${r.company_industry||''}</td><td style="font-family:var(--mono);font-weight:700">${r.score??''}</td><td><span class="badge ${gc}">${r.grade||''}</span></td><td style="font-size:11px">${r.grade_label||''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);color:var(--auto)">${r.strong_count??''}</td><td style="font-family:var(--mono);color:var(--hitl)">${r.weak_count??''}</td></tr>`;
+  currentFilter = f || currentFilter;
+  const fd = currentFilter === 'all' ? allData : allData.filter(r => (r.grade||'').startsWith(currentFilter));
+  document.getElementById('dataCount').textContent = fd.length;
+  const tb = document.getElementById('dataBody');
+  if(!fd.length){ tb.innerHTML = '<tr><td colspan="14" class="loading">데이터 없음</td></tr>'; return; }
+  tb.innerHTML = fd.map((r,i) => {
+    const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    const gc = (r.grade||'').startsWith('A') ? 'a' : (r.grade||'').startsWith('B') ? 'b' : r.grade==='C' ? 'c' : 'd';
+    return `<tr><td style="font-family:var(--mono)">${fd.length-i}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td style="font-family:var(--mono);font-size:11px">${r.company_biz||''}</td><td>${r.company_size||''}</td><td>${r.company_industry||''}</td><td style="font-family:var(--mono);font-weight:700">${r.score??''}</td><td><span class="badge ${gc}">${r.grade||''}</span></td><td style="font-size:11px">${r.grade_label||''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);color:var(--auto)">${r.strong_count??''}</td><td style="font-family:var(--mono);color:var(--hitl)">${r.weak_count??''}</td></tr>`;
   }).join('');
 }
 
+// ─── HITL 큐 ─────────────────────────────────────────
 function renderHitl(){
-  const h=allData.filter(r=>(r.score||0)<50||['C','D'].includes(r.grade));
-  document.getElementById('hitlBadge').textContent=h.length;
-  const tb=document.getElementById('hitlBody');
-  if(!h.length){tb.innerHTML='<tr><td colspan="9" class="loading">검수 대기 건 없음 ✅</td></tr>';return;}
-  tb.innerHTML=h.map((r,i)=>{
-    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    return`<tr><td style="font-family:var(--mono)">${i+1}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td>${r.company_industry||''}</td><td><span class="badge d">${r.grade||''}</span></td><td style="font-family:var(--mono)">${r.score??''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td></tr>`;
+  const h = allData.filter(r => (r.score||0) < 50 || ['C','D'].includes(r.grade));
+  document.getElementById('hitlBadge').textContent = h.length;
+  const tb = document.getElementById('hitlBody');
+  if(!h.length){ tb.innerHTML = '<tr><td colspan="9" class="loading">검수 대기 건 없음 ✅</td></tr>'; return; }
+  tb.innerHTML = h.map((r,i) => {
+    const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<tr><td style="font-family:var(--mono)">${i+1}</td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td>${r.company_industry||''}</td><td><span class="badge d">${r.grade||''}</span></td><td style="font-family:var(--mono)">${r.score??''}</td><td style="font-family:var(--mono)">${r.e_score??''}</td><td style="font-family:var(--mono)">${r.s_score??''}</td><td style="font-family:var(--mono)">${r.g_score??''}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td></tr>`;
   }).join('');
 }
 
+// ─── 실행 로그 ────────────────────────────────────────
 function renderLogs(){
-  const el=document.getElementById('logList');
-  if(!allData.length){el.innerHTML='<div class="loading">데이터 없음</div>';return;}
-  el.innerHTML=allData.slice(0,30).map(r=>{
-    const dt=r.created_at?new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
-    const isH=(r.score||0)<50||['C','D'].includes(r.grade);
-    return`<div class="log-entry"><div class="log-time">${dt}</div><div class="log-agent">${r.company_name||'—'}</div><div class="log-msg">등급 ${r.grade||'?'} · 점수 ${r.score??'?'} · E${r.e_score??'?'}/S${r.s_score??'?'}/G${r.g_score??'?'} · 강점${r.strong_count??0}/취약${r.weak_count??0}</div><div class="log-s ${isH?'esc':'ok'}">${isH?'escalate':'continue'}</div></div>`;
+  const el = document.getElementById('logList');
+  if(!allData.length){ el.innerHTML = '<div class="loading">데이터 없음</div>'; return; }
+  el.innerHTML = allData.slice(0, 30).map(r => {
+    const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
+    const isH = (r.score||0) < 50 || ['C','D'].includes(r.grade);
+    return `<div class="log-entry"><div class="log-time">${dt}</div><div class="log-agent">${r.company_name||'—'}</div><div class="log-msg">등급 ${r.grade||'?'} · 점수 ${r.score??'?'} · E${r.e_score??'?'}/S${r.s_score??'?'}/G${r.g_score??'?'} · 강점${r.strong_count??0}/취약${r.weak_count??0}</div><div class="log-s ${isH?'esc':'ok'}">${isH?'escalate':'continue'}</div></div>`;
   }).join('');
 }
 
+// ─── 품질 분석 ────────────────────────────────────────
 function renderQuality(){
-  const gm={};allData.forEach(r=>{const g=r.grade||'?';if(!gm[g])gm[g]={s:0,c:0};gm[g].s+=(r.score||0);gm[g].c++;});
-  let gh='';Object.entries(gm).sort((a,b)=>(b[1].s/b[1].c)-(a[1].s/a[1].c)).forEach(([g,v])=>{
-    const a=(v.s/v.c).toFixed(1),cls=a>=60?'hi':a>=40?'md':'lo';
-    gh+=`<div class="q-row"><div class="q-label">${g} (${v.c}건)</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
+  const gm = {};
+  allData.forEach(r => { const g = r.grade||'?'; if(!gm[g]) gm[g]={s:0,c:0}; gm[g].s+=(r.score||0); gm[g].c++; });
+  let gh = '';
+  Object.entries(gm).sort((a,b) => (b[1].s/b[1].c) - (a[1].s/a[1].c)).forEach(([g,v]) => {
+    const a = (v.s/v.c).toFixed(1), cls = a>=60?'hi':a>=40?'md':'lo';
+    gh += `<div class="q-row"><div class="q-label">${g} (${v.c}건)</div><div class="q-bar"><div class="q-fill ${cls}" style="width:${Math.min(a,100)}%"></div></div><div class="q-score">${a}</div></div>`;
   });
-  document.getElementById('gradeAvg').innerHTML=gh||'<div class="loading">데이터 없음</div>';
-  const aS=allData.length?(allData.reduce((s,r)=>s+(r.strong_count||0),0)/allData.length).toFixed(1):0;
-  const aW=allData.length?(allData.reduce((s,r)=>s+(r.weak_count||0),0)/allData.length).toFixed(1):0;
-  document.getElementById('swDist').innerHTML=`
+  document.getElementById('gradeAvg').innerHTML = gh || '<div class="loading">데이터 없음</div>';
+
+  const aS = allData.length ? (allData.reduce((s,r) => s+(r.strong_count||0), 0)/allData.length).toFixed(1) : 0;
+  const aW = allData.length ? (allData.reduce((s,r) => s+(r.weak_count||0), 0)/allData.length).toFixed(1) : 0;
+  document.getElementById('swDist').innerHTML = `
     <div class="q-row"><div class="q-label" style="width:120px">평균 강점 문항</div><div class="q-bar"><div class="q-fill hi" style="width:${(aS/30*100).toFixed(0)}%"></div></div><div class="q-score" style="color:var(--auto)">${aS}</div></div>
     <div class="q-row"><div class="q-label" style="width:120px">평균 취약 문항</div><div class="q-bar"><div class="q-fill lo" style="width:${(aW/30*100).toFixed(0)}%"></div></div><div class="q-score" style="color:var(--hitl)">${aW}</div></div>
     <div style="margin-top:12px;font-size:11px;color:var(--g3);">강점: 4점 이상 / 취약: 2점 이하 (30문항 기준)</div>`;
 }
 
-function exportCSV(){
-  if(!allData.length){alert('데이터가 없습니다.');return;}
-  const h=['진단일시','업체명','사업자번호','규모','업종','점수','등급','라벨','E','S','G','강점','취약'];
-  const rows=allData.map(r=>[r.created_at||'',r.company_name||'',r.company_biz||'',r.company_size||'',r.company_industry||'',r.score??'',r.grade||'',r.grade_label||'',r.e_score??'',r.s_score??'',r.g_score??'',r.strong_count??'',r.weak_count??'']);
-  const csv='\uFEFF'+[h,...rows].map(r=>r.join(',')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download=`ESG_진단결과_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+// ═══════════════════════════════════════════════════════════════════════════
+// VERIFY 패널 (v9.0 신규)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderVerify(){
+  // 좌측: 샘플 목록
+  let samples = allData;
+  if(currentVFilter === 'hitl')      samples = samples.filter(r => (r.score||0) < 50 || ['C','D'].includes(r.grade));
+  else if(currentVFilter === 'A')    samples = samples.filter(r => (r.grade||'').startsWith('A'));
+  else if(currentVFilter === 'B')    samples = samples.filter(r => (r.grade||'').startsWith('B'));
+  else if(currentVFilter === 'C')    samples = samples.filter(r => r.grade==='C' || r.grade==='D');
+
+  const stb = document.getElementById('sampleBody');
+  if(!samples.length){
+    stb.innerHTML = '<tr><td colspan="6" class="loading">데이터 없음</td></tr>';
+  } else {
+    stb.innerHTML = samples.slice(0, 100).map(r => {
+      const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit'}) : '';
+      const gc = (r.grade||'').startsWith('A') ? 'a' : (r.grade||'').startsWith('B') ? 'b' : r.grade==='C' ? 'c' : 'd';
+      const sel = selectedSampleId === r.id ? 'selected' : '';
+      return `<tr class="sample-row ${sel}" onclick="selectSample('${r.id}')"><td><input type="radio" name="sample" ${sel?'checked':''}></td><td style="font-weight:600;color:var(--g1)">${r.company_name||''}</td><td style="font-size:11px">${r.company_industry||''}</td><td><span class="badge ${gc}">${r.grade||''}</span></td><td style="font-family:var(--mono);font-weight:700">${r.score??''}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td></tr>`;
+    }).join('');
+  }
+
+  // 우측: 발급 내역
+  let invs = allInvitations;
+  if(currentIFilter !== 'all') invs = invs.filter(x => x.status === currentIFilter);
+
+  const itb = document.getElementById('invBody');
+  if(!invs.length){
+    itb.innerHTML = '<tr><td colspan="5" class="loading">발급 내역 없음</td></tr>';
+  } else {
+    itb.innerHTML = invs.slice(0, 50).map(inv => {
+      const diag = allData.find(d => d.id === inv.diagnosis_id);
+      const dt = inv.created_at ? new Date(inv.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const url = (getBaseUrl() || '') + '/?token=' + inv.token;
+      const statusBadge = `<span class="badge ${inv.status}">${inv.status==='pending'?'대기':inv.status==='completed'?'완료':'만료'}</span>`;
+      return `<tr><td style="font-weight:600;color:var(--g1);font-size:11px">${diag?diag.company_name:'(삭제됨)'}</td><td style="font-size:11px">${inv.expert_name||'-'}</td><td>${statusBadge}</td><td style="font-family:var(--mono);font-size:10px">${dt}</td><td><button class="copy-btn" onclick="copyLink('${url}', this)">복사</button></td></tr>`;
+    }).join('');
+  }
+
+  // 응답 목록
+  const respCount = allResponses.length;
+  document.getElementById('respCount').textContent = respCount;
+  document.getElementById('verifyBadge').textContent = allInvitations.filter(i => i.status==='pending').length;
+
+  const rtb = document.getElementById('respBody');
+  if(!allResponses.length){
+    rtb.innerHTML = '<tr><td colspan="7" class="loading">아직 응답 없음</td></tr>';
+  } else {
+    rtb.innerHTML = allResponses.map((rsp, i) => {
+      const inv = allInvitations.find(x => x.id === rsp.invitation_id);
+      const diag = inv ? allData.find(d => d.id === inv.diagnosis_id) : null;
+      const dt = rsp.submitted_at ? new Date(rsp.submitted_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const dims = [rsp.score_specificity, rsp.score_feasibility, rsp.score_industry_fit, rsp.score_structure, rsp.score_traceability].filter(x => x != null);
+      const avg = dims.length ? (dims.reduce((s,x) => s+x, 0)/dims.length).toFixed(2) : '—';
+      return `<tr style="cursor:pointer;" onclick="openRespModal('${rsp.id}')"><td style="font-family:var(--mono)">${allResponses.length-i}</td><td style="font-weight:600;color:var(--g1)">${diag?diag.company_name:'(삭제)'}</td><td>${rsp.expert_name||'-'}</td><td style="font-size:11px">${rsp.esg_career||'-'}</td><td style="font-family:var(--mono);font-weight:700;color:var(--accent)">${avg}</td><td style="font-size:11px">${rsp.c1_quality_level||'-'}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td></tr>`;
+    }).join('');
+  }
 }
 
-document.getElementById('gradeFilter').addEventListener('click',e=>{
-  if(!e.target.classList.contains('f-btn'))return;
-  document.querySelectorAll('#gradeFilter .f-btn').forEach(b=>b.classList.remove('active'));
-  e.target.classList.add('active');renderData(e.target.dataset.grade);
+function selectSample(id){
+  selectedSampleId = id;
+  const s = allData.find(r => r.id === id);
+  const info = document.getElementById('selectedSample');
+  if(s){
+    info.classList.remove('empty');
+    info.innerHTML = `<b>${s.company_name||''}</b> · ${s.company_industry||''} · 등급 <b>${s.grade||''}</b> · 점수 ${s.score??''}`;
+    document.getElementById('issueBtn').disabled = false;
+  }
+  renderVerify();
+}
+
+async function issueInvitation(){
+  if(!selectedSampleId){ alert('샘플을 먼저 선택하세요.'); return; }
+  if(!getBaseUrl()){
+    if(!confirm('설문 사이트 Base URL이 설정되지 않았습니다. 그래도 발급하시겠습니까?\n(나중에 URL 설정 후 링크를 다시 복사할 수 있습니다.)')) return;
+  }
+
+  // 토큰 생성: 24자 대소문자+숫자
+  const token = generateToken();
+
+  const payload = {
+    diagnosis_id: selectedSampleId,
+    token: token,
+    expert_name: document.getElementById('invExpertName').value.trim() || null,
+    expert_email: document.getElementById('invExpertEmail').value.trim() || null,
+    notes: document.getElementById('invNotes').value.trim() || null
+  };
+
+  try {
+    const { data, error } = await sb.from('survey_invitations').insert(payload).select().single();
+    if(error) throw error;
+
+    const url = (getBaseUrl() || '[BASE_URL]') + '/?token=' + token;
+    if(navigator.clipboard){
+      try { await navigator.clipboard.writeText(url); } catch(_){}
+    }
+    alert('✅ 검증 링크가 발급되었습니다.\n\nURL이 클립보드에 복사되었습니다:\n' + url);
+
+    // 폼 초기화
+    document.getElementById('invExpertName').value = '';
+    document.getElementById('invExpertEmail').value = '';
+    document.getElementById('invNotes').value = '';
+    selectedSampleId = null;
+    document.getElementById('selectedSample').className = 'selected-info empty';
+    document.getElementById('selectedSample').textContent = '왼쪽에서 진단 샘플을 선택하세요';
+    document.getElementById('issueBtn').disabled = true;
+
+    await loadAll();
+  } catch(e){
+    console.error(e);
+    if(e.message && e.message.includes('survey_invitations')){
+      alert('테이블이 없습니다.\nSupabase에 migration_v9_survey_tables.sql 을 먼저 실행해주세요.');
+    } else {
+      alert('발급 실패: ' + e.message);
+    }
+  }
+}
+
+function generateToken(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let t = '';
+  for(let i=0; i<24; i++) t += chars[Math.floor(Math.random()*chars.length)];
+  return t;
+}
+
+async function copyLink(url, btn){
+  try {
+    await navigator.clipboard.writeText(url);
+    btn.textContent = '복사됨!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '복사'; btn.classList.remove('copied'); }, 1500);
+  } catch(e){
+    prompt('아래 링크를 복사하세요:', url);
+  }
+}
+
+// ─── 응답 상세 모달 ───────────────────────────────────
+function openRespModal(id){
+  const rsp = allResponses.find(r => r.id === id);
+  if(!rsp) return;
+  const inv = allInvitations.find(x => x.id === rsp.invitation_id);
+  const diag = inv ? allData.find(d => d.id === inv.diagnosis_id) : null;
+
+  document.getElementById('respModalTitle').textContent = `응답 상세 — ${diag?diag.company_name:''}`;
+
+  const dimRow = (label, val) => {
+    if(val == null) return `<div class="resp-row"><div class="resp-key">${label}</div><div class="resp-val">—</div></div>`;
+    const pct = (val/5*100);
+    return `<div class="resp-row"><div class="resp-key">${label}</div><div class="score-bar-wrap"><div class="b"><div class="f" style="width:${pct}%"></div></div><div class="v">${val}/5</div></div></div>`;
+  };
+
+  const html = `
+    <div class="resp-section">
+      <div class="resp-section-title">평가자 정보</div>
+      <div class="resp-row"><div class="resp-key">성함</div><div class="resp-val">${rsp.expert_name||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">전문 분야</div><div class="resp-val">${rsp.expert_field||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">ESG 경력</div><div class="resp-val">${rsp.esg_career||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">컨설팅 수행</div><div class="resp-val">${rsp.esg_consulting_count||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">주요 대상</div><div class="resp-val">${rsp.main_target||'—'}</div></div>
+    </div>
+    <div class="resp-section">
+      <div class="resp-section-title">A. 5개 품질 차원 (1~5점 리커트)</div>
+      ${dimRow('구체성 (Specificity)', rsp.score_specificity)}
+      ${dimRow('실행가능성 (Feasibility)', rsp.score_feasibility)}
+      ${dimRow('산업적합성 (Industry Fit)', rsp.score_industry_fit)}
+      ${dimRow('구조화 (Structure)', rsp.score_structure)}
+      ${dimRow('추적가능성 (Traceability)', rsp.score_traceability)}
+    </div>
+    <div class="resp-section">
+      <div class="resp-section-title">B. AI 자동채점 상호검증</div>
+      <div class="resp-row"><div class="resp-key">B1. 환각 사례</div><div class="resp-val">${rsp.b1_hallucination||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">B2. HITL 필수 차원</div><div class="resp-val">${rsp.b2_hitl_required||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">B3. AI 일치 예상 차원</div><div class="resp-val">${rsp.b3_ai_match||'—'}</div></div>
+    </div>
+    <div class="resp-section">
+      <div class="resp-section-title">C. 종합 판단</div>
+      <div class="resp-row"><div class="resp-key">C1. 품질 수준</div><div class="resp-val">${rsp.c1_quality_level||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">C2. 제공 적절성</div><div class="resp-val">${rsp.c2_provision_readiness||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">C3. 대체 가능성</div><div class="resp-val">${rsp.c3_replacement_potential||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">C4. 가장 큰 장점</div><div class="resp-val">${rsp.c4_top_advantage||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">C5. 가장 큰 우려</div><div class="resp-val">${rsp.c5_top_concern||'—'}</div></div>
+      <div class="resp-row"><div class="resp-key">C6. 포지셔닝</div><div class="resp-val">${rsp.c6_positioning||'—'}</div></div>
+    </div>
+    ${rsp.free_comment ? `
+    <div class="resp-section">
+      <div class="resp-section-title">자유 의견</div>
+      <div style="background:var(--navy-ll);padding:12px;border-radius:4px;font-size:12px;color:var(--g1);line-height:1.7;white-space:pre-wrap;">${rsp.free_comment}</div>
+    </div>` : ''}
+  `;
+  document.getElementById('respModalBody').innerHTML = html;
+  document.getElementById('respModal').classList.add('show');
+}
+function closeRespModal(){
+  document.getElementById('respModal').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LEARN 패널 (Stage 5 · 향후 연구 — 구조만 노출)
+// ═══════════════════════════════════════════════════════════════════════════
+function renderLearn(){
+  const respN = allResponses.length;
+  const threshold = 30;
+  const respPct = Math.min(100, (respN/threshold)*100);
+  document.getElementById('learnRespBar').style.width = respPct + '%';
+  document.getElementById('learnRespVal').textContent = respN + '/' + threshold;
+
+  // 매칭률은 향후 계산 — 현재는 placeholder
+  document.getElementById('learnMatchBar').style.width = '0%';
+  document.getElementById('learnMatchVal').textContent = respN ? '계산 대기' : '—';
+}
+
+// ─── CSV 내보내기 ─────────────────────────────────────
+function exportCSV(){
+  if(!allData.length){ alert('데이터가 없습니다.'); return; }
+  const h = ['진단일시','업체명','사업자번호','규모','업종','점수','등급','라벨','E','S','G','강점','취약'];
+  const rows = allData.map(r => [r.created_at||'', r.company_name||'', r.company_biz||'', r.company_size||'', r.company_industry||'', r.score??'', r.grade||'', r.grade_label||'', r.e_score??'', r.s_score??'', r.g_score??'', r.strong_count??'', r.weak_count??'']);
+  const csv = '\uFEFF' + [h, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8;' }));
+  a.download = `ESG_진단결과_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ─── 필터 이벤트 ──────────────────────────────────────
+document.getElementById('gradeFilter').addEventListener('click', e => {
+  if(!e.target.classList.contains('f-btn')) return;
+  document.querySelectorAll('#gradeFilter .f-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  renderData(e.target.dataset.grade);
+});
+
+// verify 패널 필터
+document.querySelectorAll('[data-vfilter]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    document.querySelectorAll('[data-vfilter]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentVFilter = e.target.dataset.vfilter;
+    renderVerify();
+  });
+});
+document.querySelectorAll('[data-ifilter]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    document.querySelectorAll('[data-ifilter]').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentIFilter = e.target.dataset.ifilter;
+    renderVerify();
+  });
+});
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('respModal').addEventListener('click', e => {
+  if(e.target.id === 'respModal') closeRespModal();
+});
+
+// ESC로 모달 닫기
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeRespModal();
 });
 </script>
+
 </body>
 </html>
+
+
