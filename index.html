@@ -150,6 +150,27 @@ tr:hover td{background:var(--navy-ll);}
 .verify-form input:focus{outline:none;border-color:var(--accent);}
 .verify-form-row{display:flex;gap:8px;align-items:center;}
 .verify-form-row input{margin-bottom:0;flex:1;}
+/* 보고서 업로드 (Day 1-C 추가) */
+.upload-box{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
+.upload-box h4{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;}
+.upload-empty{font-size:11px;color:var(--g3);text-align:center;padding:14px;background:var(--off);border:1px dashed var(--border);border-radius:4px;}
+.upload-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:8px 10px;background:var(--off);border-radius:4px;border:1px solid var(--border);}
+.upload-row .ut{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;letter-spacing:.3px;flex-shrink:0;}
+.upload-row .ut.self{background:var(--accent-l);color:var(--accent);}
+.upload-row .ut.consult{background:var(--auto-l);color:var(--auto);}
+.upload-row .ut.evidence{background:var(--cond-l);color:var(--cond);}
+.upload-row .uname{flex:1;font-size:11px;font-family:var(--mono);color:var(--g1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.upload-row .usize{font-size:10px;color:var(--g3);font-family:var(--mono);flex-shrink:0;}
+.upload-row .udel{background:none;border:none;color:var(--hitl);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:3px;}
+.upload-row .udel:hover{background:var(--hitl-l);}
+.upload-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
+.upload-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px dashed var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:var(--font);transition:all .15s;}
+.upload-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-l);}
+.upload-btn:disabled{opacity:.4;cursor:not-allowed;}
+.upload-btn .ub-icon{font-size:18px;}
+.upload-btn .ub-label{font-size:10px;font-weight:600;color:var(--g2);text-align:center;line-height:1.3;}
+.upload-btn input[type=file]{display:none;}
+.upload-progress{font-size:11px;color:var(--accent);text-align:center;padding:8px;}
 .selected-info{font-size:12px;color:var(--g2);padding:10px;background:var(--white);border-radius:4px;margin-bottom:10px;}
 .selected-info.empty{color:var(--g3);font-style:italic;text-align:center;}
 .selected-info b{color:var(--navy);}
@@ -370,6 +391,32 @@ tr:hover td{background:var(--navy-ll);}
 
         <!-- 우측: 발급 폼 + 발급 내역 -->
         <div>
+          <!-- 보고서 업로드 (Day 1-C 추가) -->
+          <div class="upload-box">
+            <h4>📎 첨부 보고서</h4>
+            <div id="uploadList">
+              <div class="upload-empty">왼쪽에서 진단 샘플을 먼저 선택하세요</div>
+            </div>
+            <div class="upload-controls" id="uploadControls" style="display:none;">
+              <label class="upload-btn" title="자가진단 보고서 PDF">
+                <span class="ub-icon">📋</span>
+                <span class="ub-label">자가진단<br>PDF</span>
+                <input type="file" accept=".pdf" onchange="uploadReport(event,'self_assessment')">
+              </label>
+              <label class="upload-btn" title="컨설팅 보고서 PDF">
+                <span class="ub-icon">📝</span>
+                <span class="ub-label">컨설팅<br>PDF</span>
+                <input type="file" accept=".pdf" onchange="uploadReport(event,'consulting')">
+              </label>
+              <label class="upload-btn" title="증빙자료 ZIP">
+                <span class="ub-icon">📎</span>
+                <span class="ub-label">증빙자료<br>ZIP</span>
+                <input type="file" accept=".zip" onchange="uploadReport(event,'evidence')">
+              </label>
+            </div>
+            <div id="uploadProgress" class="upload-progress" style="display:none;"></div>
+          </div>
+
           <div class="verify-form" style="margin-bottom:16px;">
             <h4>새 검증 링크 발급</h4>
             <div id="selectedSample" class="selected-info empty">왼쪽에서 진단 샘플을 선택하세요</div>
@@ -771,6 +818,7 @@ function selectSample(id){
     info.innerHTML = `<b>${s.company_name||''}</b> · ${s.company_industry||''} · 등급 <b>${s.grade||''}</b> · 점수 ${s.score??''}`;
     document.getElementById('issueBtn').disabled = false;
   }
+  loadSampleReports(id);   // ← Day 1-C 추가: 첨부 파일 목록 로드
   renderVerify();
 }
 
@@ -826,6 +874,175 @@ function generateToken(){
   let t = '';
   for(let i=0; i<24; i++) t += chars[Math.floor(Math.random()*chars.length)];
   return t;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 보고서 업로드 (Day 1-C 추가)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const STORAGE_BUCKET = 'sample-reports';
+const FILE_TYPE_LABELS = {
+  self_assessment: { label: '자가진단', cls: 'self', icon: '📋' },
+  consulting:      { label: '컨설팅',   cls: 'consult', icon: '📝' },
+  evidence:        { label: '증빙자료', cls: 'evidence', icon: '📎' },
+};
+
+// 진단 결과 ID에 해당하는 파일 목록 로드 + 렌더링
+async function loadSampleReports(diagnosisId){
+  const listEl = document.getElementById('uploadList');
+  const ctrlEl = document.getElementById('uploadControls');
+
+  if(!diagnosisId){
+    listEl.innerHTML = '<div class="upload-empty">왼쪽에서 진단 샘플을 먼저 선택하세요</div>';
+    ctrlEl.style.display = 'none';
+    return;
+  }
+
+  ctrlEl.style.display = 'grid';
+  listEl.innerHTML = '<div class="upload-empty">파일 목록 로딩 중...</div>';
+
+  try {
+    const { data: files, error } = await sb
+      .storage
+      .from(STORAGE_BUCKET)
+      .list(diagnosisId, { limit: 30, sortBy: { column: 'name', order: 'asc' } });
+
+    if(error){
+      console.warn('[loadSampleReports] list 실패:', error);
+      listEl.innerHTML = '<div class="upload-empty" style="color:var(--hitl)">파일 목록을 불러올 수 없습니다.</div>';
+      return;
+    }
+
+    const items = (files || []).filter(f => f.name && !f.name.startsWith('.'));
+    if(items.length === 0){
+      listEl.innerHTML = '<div class="upload-empty">아직 업로드된 파일이 없습니다.<br>아래에서 파일을 추가하세요.</div>';
+      return;
+    }
+
+    listEl.innerHTML = items.map(f => {
+      const type = detectFileType(f.name);
+      const cfg = FILE_TYPE_LABELS[type] || { label:'기타', cls:'self' };
+      const sz = f.metadata?.size ? formatFileSize(f.metadata.size) : '';
+      const path = `${diagnosisId}/${f.name}`;
+      return `<div class="upload-row">
+        <span class="ut ${cfg.cls}">${cfg.label}</span>
+        <span class="uname" title="${escapeHtmlAdmin(f.name)}">${escapeHtmlAdmin(f.name)}</span>
+        <span class="usize">${sz}</span>
+        <button class="udel" title="삭제" onclick="deleteReport('${path.replace(/'/g,"\\'")}')">✕</button>
+      </div>`;
+    }).join('');
+
+  } catch(err) {
+    console.error('[loadSampleReports]', err);
+    listEl.innerHTML = '<div class="upload-empty" style="color:var(--hitl)">오류: ' + (err.message || err) + '</div>';
+  }
+}
+
+// 파일명에서 종류 추정 (설문 사이트 detectType과 동일 규칙)
+function detectFileType(filename){
+  const lower = (filename || '').toLowerCase();
+  if(lower.includes('자가진단') || lower.includes('self_assessment') || lower.includes('selfassessment')) return 'self_assessment';
+  if(lower.includes('컨설팅') || lower.includes('consulting')) return 'consulting';
+  if(lower.includes('증빙') || lower.includes('evidence') || lower.endsWith('.zip')) return 'evidence';
+  return 'consulting'; // 기본값: 컨설팅으로 가정
+}
+
+function formatFileSize(bytes){
+  if(!bytes) return '';
+  if(bytes < 1024) return bytes + ' B';
+  if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function escapeHtmlAdmin(s){
+  if(s == null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// 파일 업로드 (input change 이벤트에서 호출)
+async function uploadReport(event, fileType){
+  const file = event.target.files[0];
+  if(!file) return;
+
+  if(!selectedSampleId){
+    alert('진단 샘플을 먼저 선택하세요.');
+    event.target.value = '';
+    return;
+  }
+
+  // 파일 크기 제한: 50MB
+  const MAX_SIZE = 50 * 1024 * 1024;
+  if(file.size > MAX_SIZE){
+    alert('파일 크기는 50MB를 초과할 수 없습니다.\n현재: ' + formatFileSize(file.size));
+    event.target.value = '';
+    return;
+  }
+
+  // 파일명에 타입 prefix를 붙여서 detectFileType이 정확히 인식하도록
+  const typePrefix = {
+    self_assessment: '자가진단',
+    consulting: '컨설팅',
+    evidence: '증빙자료',
+  }[fileType] || '';
+  // 사용자가 올린 파일명 그대로 두되, 그 안에 한국어 타입 키워드가 없으면 prefix 추가
+  let finalName = file.name;
+  if(!finalName.includes(typePrefix)){
+    const dotIdx = finalName.lastIndexOf('.');
+    const base = dotIdx > -1 ? finalName.slice(0, dotIdx) : finalName;
+    const ext = dotIdx > -1 ? finalName.slice(dotIdx) : '';
+    finalName = `${typePrefix}_${base}${ext}`;
+  }
+
+  const path = `${selectedSampleId}/${finalName}`;
+  const progressEl = document.getElementById('uploadProgress');
+  progressEl.style.display = 'block';
+  progressEl.textContent = `📤 업로드 중: ${finalName} (${formatFileSize(file.size)})`;
+
+  try {
+    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,  // 같은 이름의 파일이 있으면 덮어쓰기
+    });
+
+    if(error) throw error;
+
+    progressEl.textContent = `✅ 업로드 완료: ${finalName}`;
+    setTimeout(() => { progressEl.style.display = 'none'; }, 2000);
+
+    // 목록 새로고침
+    await loadSampleReports(selectedSampleId);
+
+  } catch(err){
+    console.error('[uploadReport]', err);
+    progressEl.textContent = `❌ 업로드 실패: ${err.message || err}`;
+    progressEl.style.color = 'var(--hitl)';
+    setTimeout(() => {
+      progressEl.style.display = 'none';
+      progressEl.style.color = 'var(--accent)';
+    }, 4000);
+  } finally {
+    event.target.value = '';  // 같은 파일 다시 선택 가능하게 초기화
+  }
+}
+
+// 파일 삭제
+async function deleteReport(storagePath){
+  if(!confirm(`이 파일을 삭제하시겠습니까?\n\n${storagePath}\n\n전문가가 이미 이 보고서를 본 상태일 수 있으니 신중히 결정하세요.`)) return;
+
+  try {
+    const { error } = await sb.storage.from(STORAGE_BUCKET).remove([storagePath]);
+    if(error) throw error;
+
+    // 목록 새로고침
+    if(selectedSampleId){
+      await loadSampleReports(selectedSampleId);
+    }
+  } catch(err){
+    console.error('[deleteReport]', err);
+    alert('삭제 실패: ' + (err.message || err));
+  }
 }
 
 async function copyLink(url, btn){
