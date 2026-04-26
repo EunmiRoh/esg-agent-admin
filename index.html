@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ESG Agent Orchestration | Admin v9.0</title>
+<title>ESG Agent Orchestration | Admin v9.2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -203,7 +203,7 @@ tr:hover td{background:var(--navy-ll);}
 <!-- ─── 로그인 ─── -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <div class="login-logo">ESG-AACS · v9.0</div>
+    <div class="login-logo">ESG-AACS · v9.2.0</div>
     <div class="login-title">Agent Orchestration</div>
     <div class="login-desc">ESG 자가진단 AI 에이전트 관리 시스템</div>
     <label class="login-label">관리자 비밀번호</label>
@@ -218,7 +218,7 @@ tr:hover td{background:var(--navy-ll);}
   <div class="sidebar-header">
     <div class="sidebar-logo">ESG-AACS</div>
     <div class="sidebar-title">Agent Orchestration</div>
-    <div class="sidebar-sub">관리자 대시보드 v9.0</div>
+    <div class="sidebar-sub">관리자 대시보드 v9.2.0</div>
   </div>
 
   <div class="nav-section">
@@ -532,7 +532,7 @@ tr:hover td{background:var(--navy-ll);}
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// ESG Agent Orchestration v9.0
+// ESG Agent Orchestration v9.2.0
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Supabase 연결 (CDN 로드 실패 시 안전하게 폴백)
@@ -880,11 +880,16 @@ function generateToken(){
 // 보고서 업로드 (Day 1-C 추가)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const STORAGE_BUCKET = 'sample-reports';
+const STORAGE_BUCKET = 'esg-reports';
 const FILE_TYPE_LABELS = {
-  self_assessment: { label: '자가진단', cls: 'self', icon: '📋' },
-  consulting:      { label: '컨설팅',   cls: 'consult', icon: '📝' },
-  evidence:        { label: '증빙자료', cls: 'evidence', icon: '📎' },
+  self_assessment: { label: '자가진단 보고서',           cls: 'self',     icon: '📋' },
+  consulting:      { label: '컨설팅 보고서',             cls: 'consult',  icon: '📝' },
+  evidence:        { label: '증빙자료',                   cls: 'evidence', icon: '📎' },
+  e01:             { label: '증빙자료 ① 환경경영방침서',     cls: 'evidence', icon: '📎' },
+  s01:             { label: '증빙자료 ② 인권경영 선언문',    cls: 'evidence', icon: '📎' },
+  e08:             { label: '증빙자료 ③ 에너지 사용량 집계표', cls: 'evidence', icon: '📎' },
+  e09:             { label: '증빙자료 ④ 온실가스 인벤토리',  cls: 'evidence', icon: '📎' },
+  g01:             { label: '증빙자료 ⑤ 윤리강령',          cls: 'evidence', icon: '📎' },
 };
 
 // 진단 결과 ID에 해당하는 파일 목록 로드 + 렌더링
@@ -913,7 +918,7 @@ async function loadSampleReports(diagnosisId){
       return;
     }
 
-    const items = (files || []).filter(f => f.name && !f.name.startsWith('.'));
+    const items = (files || []).filter(f => f.name && !f.name.startsWith('.') && f.metadata !== null);
     if(items.length === 0){
       listEl.innerHTML = '<div class="upload-empty">아직 업로드된 파일이 없습니다.<br>아래에서 파일을 추가하세요.</div>';
       return;
@@ -941,6 +946,16 @@ async function loadSampleReports(diagnosisId){
 // 파일명에서 종류 추정 (설문 사이트 detectType과 동일 규칙)
 function detectFileType(filename){
   const lower = (filename || '').toLowerCase();
+  // 정확 일치 PDF 2종 (esg-platform 자동 생성)
+  if(lower === 'self-assessment.pdf') return 'self_assessment';
+  if(lower === 'consulting.pdf') return 'consulting';
+  // 5종 증빙자료 워드 (prefix 매칭)
+  if(lower.startsWith('e-01')) return 'e01';
+  if(lower.startsWith('s-01')) return 's01';
+  if(lower.startsWith('e-08')) return 'e08';
+  if(lower.startsWith('e-09')) return 'e09';
+  if(lower.startsWith('g-01')) return 'g01';
+  // 키워드/확장자 폴백 (기존 호환)
   if(lower.includes('자가진단') || lower.includes('self_assessment') || lower.includes('selfassessment')) return 'self_assessment';
   if(lower.includes('컨설팅') || lower.includes('consulting')) return 'consulting';
   if(lower.includes('증빙') || lower.includes('evidence') || lower.endsWith('.zip')) return 'evidence';
