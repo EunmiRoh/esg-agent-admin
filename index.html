@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ESG Agent Orchestration | Admin v9.2.0</title>
+<title>ESG Agent Orchestration | Admin v9.3.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -163,7 +163,7 @@ tr:hover td{background:var(--navy-ll);}
 .upload-row .usize{font-size:10px;color:var(--g3);font-family:var(--mono);flex-shrink:0;}
 .upload-row .udel{background:none;border:none;color:var(--hitl);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:3px;}
 .upload-row .udel:hover{background:var(--hitl-l);}
-.upload-controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px;}
+.upload-controls{display:grid;grid-template-columns:repeat(auto-fill, minmax(82px, 1fr));gap:6px;margin-top:10px;}
 .upload-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px dashed var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:var(--font);transition:all .15s;}
 .upload-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-l);}
 .upload-btn:disabled{opacity:.4;cursor:not-allowed;}
@@ -203,7 +203,7 @@ tr:hover td{background:var(--navy-ll);}
 <!-- ─── 로그인 ─── -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
-    <div class="login-logo">ESG-AACS · v9.2.0</div>
+    <div class="login-logo">ESG-AACS · v9.3.0</div>
     <div class="login-title">Agent Orchestration</div>
     <div class="login-desc">ESG 자가진단 AI 에이전트 관리 시스템</div>
     <label class="login-label">관리자 비밀번호</label>
@@ -218,7 +218,7 @@ tr:hover td{background:var(--navy-ll);}
   <div class="sidebar-header">
     <div class="sidebar-logo">ESG-AACS</div>
     <div class="sidebar-title">Agent Orchestration</div>
-    <div class="sidebar-sub">관리자 대시보드 v9.2.0</div>
+    <div class="sidebar-sub">관리자 대시보드 v9.3.0</div>
   </div>
 
   <div class="nav-section">
@@ -408,10 +408,30 @@ tr:hover td{background:var(--navy-ll);}
                 <span class="ub-label">컨설팅<br>PDF</span>
                 <input type="file" accept=".pdf" onchange="uploadReport(event,'consulting')">
               </label>
-              <label class="upload-btn" title="증빙자료 ZIP">
-                <span class="ub-icon">📎</span>
-                <span class="ub-label">증빙자료<br>ZIP</span>
-                <input type="file" accept=".zip" onchange="uploadReport(event,'evidence')">
+              <label class="upload-btn" title="증빙자료 ① 환경경영방침서">
+                <span class="ub-icon">📄</span>
+                <span class="ub-label">증빙①<br>환경방침</span>
+                <input type="file" accept=".docx,.doc,.pdf" onchange="uploadReport(event,'E-01')">
+              </label>
+              <label class="upload-btn" title="증빙자료 ② 인권경영 선언문">
+                <span class="ub-icon">📄</span>
+                <span class="ub-label">증빙②<br>인권선언</span>
+                <input type="file" accept=".docx,.doc,.pdf" onchange="uploadReport(event,'S-01')">
+              </label>
+              <label class="upload-btn" title="증빙자료 ③ 에너지 사용량 집계표">
+                <span class="ub-icon">📄</span>
+                <span class="ub-label">증빙③<br>에너지</span>
+                <input type="file" accept=".docx,.doc,.pdf" onchange="uploadReport(event,'E-08')">
+              </label>
+              <label class="upload-btn" title="증빙자료 ④ 온실가스 인벤토리">
+                <span class="ub-icon">📄</span>
+                <span class="ub-label">증빙④<br>온실가스</span>
+                <input type="file" accept=".docx,.doc,.pdf" onchange="uploadReport(event,'E-09')">
+              </label>
+              <label class="upload-btn" title="증빙자료 ⑤ 윤리강령">
+                <span class="ub-icon">📄</span>
+                <span class="ub-label">증빙⑤<br>윤리강령</span>
+                <input type="file" accept=".docx,.doc,.pdf" onchange="uploadReport(event,'G-01')">
               </label>
             </div>
             <div id="uploadProgress" class="upload-progress" style="display:none;"></div>
@@ -532,7 +552,7 @@ tr:hover td{background:var(--navy-ll);}
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// ESG Agent Orchestration v9.2.0
+// ESG Agent Orchestration v9.3.0
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Supabase 연결 (CDN 로드 실패 시 안전하게 폴백)
@@ -1000,6 +1020,11 @@ async function uploadReport(event, fileType){
     self_assessment: '자가진단',
     consulting: '컨설팅',
     evidence: '증빙자료',
+    'E-01': 'E-01',
+    'S-01': 'S-01',
+    'E-08': 'E-08',
+    'E-09': 'E-09',
+    'G-01': 'G-01',
   }[fileType] || '';
   // 사용자가 올린 파일명 그대로 두되, 그 안에 한국어 타입 키워드가 없으면 prefix 추가
   let finalName = file.name;
