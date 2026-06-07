@@ -440,6 +440,10 @@ tr:hover td{background:var(--navy-ll);}
           <div class="verify-form" style="margin-bottom:16px;">
             <h4>새 검증 링크 발급</h4>
             <div id="selectedSample" class="selected-info empty">왼쪽에서 진단 샘플을 선택하세요</div>
+            <select id="invRespondentType" style="width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:var(--font);margin-bottom:8px;background:var(--white);">
+              <option value="expert">전문가</option>
+              <option value="demand">수요기업</option>
+            </select>
             <input id="invExpertName" type="text" placeholder="대상 전문가 이름 (선택)">
             <input id="invExpertEmail" type="email" placeholder="이메일 (선택)">
             <input id="invNotes" type="text" placeholder="메모 (선택)">
@@ -805,7 +809,10 @@ function renderVerify(){
       const dt = inv.created_at ? new Date(inv.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
       const url = (getBaseUrl() || '') + '/?token=' + inv.token;
       const statusBadge = `<span class="badge ${inv.status}">${inv.status==='pending'?'대기':inv.status==='completed'?'완료':'만료'}</span>`;
-      return `<tr><td style="font-weight:600;color:var(--g1);font-size:11px">${diag?diag.company_name:'(삭제됨)'}</td><td style="font-size:11px">${inv.expert_name||'-'}</td><td>${statusBadge}</td><td style="font-family:var(--mono);font-size:10px">${dt}</td><td><button class="copy-btn" onclick="copyLink('${url}', this)">복사</button></td></tr>`;
+      const typeBadge = inv.respondent_type==='demand'
+        ? `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;background:#FFF4E5;color:#E07B00;margin-right:4px;">수요</span>`
+        : `<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;background:#E8EDF5;color:#002555;margin-right:4px;">전문</span>`;
+      return `<tr><td style="font-weight:600;color:var(--g1);font-size:11px">${diag?diag.company_name:'(삭제됨)'}</td><td style="font-size:11px">${typeBadge}${inv.expert_name||'-'}</td><td>${statusBadge}</td><td style="font-family:var(--mono);font-size:10px">${dt}</td><td><button class="copy-btn" onclick="copyLink('${url}', this)">복사</button></td></tr>`;
     }).join('');
   }
 
@@ -854,6 +861,7 @@ async function issueInvitation(){
   const payload = {
     diagnosis_id: selectedSampleId,
     token: token,
+    respondent_type: document.getElementById('invRespondentType').value,
     expert_name: document.getElementById('invExpertName').value.trim() || null,
     expert_email: document.getElementById('invExpertEmail').value.trim() || null,
     notes: document.getElementById('invNotes').value.trim() || null
