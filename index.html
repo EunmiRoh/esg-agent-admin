@@ -578,6 +578,7 @@ try {
 let allData = [];           // diagnosis_results
 let allInvitations = [];    // survey_invitations
 let allResponses = [];      // survey_responses
+let allLearning = [];       // stage5_learning (Stage 5 학습 이력)
 let currentFilter = 'all';
 let currentVFilter = 'all'; // verify 패널 샘플 필터
 let currentIFilter = 'all'; // verify 패널 발급내역 필터
@@ -663,6 +664,15 @@ async function loadAll(){
       if(!error) resp = data || [];
     } catch(_){}
     allResponses = resp;
+
+    // 4. Stage 5 학습 이력 (신규 테이블 — 없으면 빈 배열)
+    let learn = [];
+    try {
+      const { data, error } = await sb.from('stage5_learning')
+        .select('*').order('created_at', { ascending:false });
+      if(!error) learn = data || [];
+    } catch(_){}
+    allLearning = learn;
 
     document.getElementById('lastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
 
@@ -1248,6 +1258,48 @@ function renderLearn(){
         '🎓 <b>Fine-tune 제안</b> — Agent 2(RAG+KG)에서 \''+(top?top.label:'-')+'\' 관련 프롬프트·임계값 우선 조정 후 재검증.'+
       '</div>'+
     '</div>';
+
+  // 4. Fine-tune 학습 이력 (stage5_learning — 실시간 Supabase 동기화)
+  let logBox = document.getElementById('learnLog');
+  if(!logBox){
+    logBox = document.createElement('div');
+    logBox.id = 'learnLog';
+    logBox.style.marginTop = '18px';
+    const host2 = document.querySelector('#panel-learn .pipe-box');
+    if(host2) host2.appendChild(logBox);
+  }
+  if(!allLearning.length){
+    logBox.innerHTML = '<div class="q-card" style="border-left:3px solid var(--future);"><div class="q-card-title">🎓 Fine-tune 학습 이력</div><div style="font-size:12px;color:var(--g3);padding:8px 0;">아직 저장된 학습 디렉티브가 없습니다.</div></div>';
+  } else {
+    const latest = allLearning[0];
+    const stName = { proposed:'제안', applied:'적용됨', validated:'검증됨' };
+    const logRows = allLearning.map(function(l){
+      const dt = String(l.created_at||'').replace('T',' ').slice(0,16);
+      const done = (l.status==='applied' || l.status==='validated');
+      return '<tr>'+
+        '<td style="padding:6px 8px;font-family:var(--mono);font-size:11px">'+dt+'</td>'+
+        '<td style="padding:6px 8px;font-size:12px;color:var(--hitl);font-weight:600">'+(l.priority_dimension||'-')+'</td>'+
+        '<td style="padding:6px 8px;font-family:var(--mono);font-size:12px;text-align:center">'+(l.priority_mean!=null?Number(l.priority_mean).toFixed(2):'-')+' / '+(l.priority_sd!=null?Number(l.priority_sd).toFixed(2):'-')+'</td>'+
+        '<td style="padding:6px 8px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(done?'var(--auto-l)':'var(--future-l)')+';color:'+(done?'var(--auto)':'var(--future)')+';">'+(stName[l.status]||l.status)+'</span></td>'+
+        '<td style="padding:6px 8px;font-size:11px;color:var(--g2);text-align:center">'+(l.n_experts||'-')+'명</td></tr>';
+    }).join('');
+    logBox.innerHTML =
+      '<div class="q-card" style="border-left:3px solid var(--auto);">'+
+        '<div class="q-card-title">🎓 Fine-tune 학습 이력 <span style="margin-left:8px;font-size:11px;color:var(--g3)">('+allLearning.length+'건 · 실시간 Supabase 동기화)</span></div>'+
+        '<div style="margin:8px 0 12px;padding:10px 12px;background:var(--auto-l);border-radius:6px;font-size:12px;color:var(--g1);line-height:1.6;">'+
+          '✅ <b>현재 적용 디렉티브</b> — 우선 차원 <b style="color:var(--hitl)">'+(latest.priority_dimension||'-')+'</b><br>'+
+          '<span style="color:var(--g2)">'+String(latest.tuning_directive||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>'+
+        '</div>'+
+        '<table style="width:100%;border-collapse:collapse;">'+
+          '<thead><tr style="border-bottom:1px solid var(--border);">'+
+            '<th style="padding:6px 8px;font-size:11px;color:var(--g2);text-align:left">일시</th>'+
+            '<th style="padding:6px 8px;font-size:11px;color:var(--g2);text-align:left">우선 차원</th>'+
+            '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">평균/불일치</th>'+
+            '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">상태</th>'+
+            '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">표본</th></tr></thead>'+
+          '<tbody>'+logRows+'</tbody></table>'+
+      '</div>';
+  }
 }
 
 // ─── CSV 내보내기 ─────────────────────────────────────
