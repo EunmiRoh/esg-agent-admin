@@ -1177,6 +1177,26 @@ function closeRespModal(){
 // ═══════════════════════════════════════════════════════════════════════════
 // LEARN 패널 (Stage 5 · 향후 연구 — 구조만 노출)
 // ═══════════════════════════════════════════════════════════════════════════
+// 학습 실행: 전문가 피드백 → LLM 디렉티브 자동 생성 (esg-platform-v8/api/learn) → 저장 후 어드민 동기화
+const LEARN_ENDPOINT = 'https://esg-platform-v8.vercel.app/api/learn';
+async function runLearn(btn){
+  if(btn){ btn.disabled = true; btn.textContent = '학습 중...'; }
+  try {
+    const res = await fetch(LEARN_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){
+      alert('학습 실패: ' + (d.error || ('HTTP ' + res.status)));
+    } else {
+      alert('학습 완료 — 우선 차원: ' + (d.priority||'-') + ' (유효 전문가 ' + (d.n_experts||'-') + '명)\n새 디렉티브가 저장되었습니다.');
+      await loadAll(); // 어드민 화면 동기화 (stage5_learning 재조회)
+    }
+  } catch(e){
+    alert('학습 요청 오류: ' + (e && e.message || e));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 학습 실행'; }
+  }
+}
+
 function renderLearn(){
   const threshold = 30;
   const TESTS = ['노은미모바일','노은미'];
@@ -1242,7 +1262,8 @@ function renderLearn(){
     '<div class="q-card" style="border-left:3px solid var(--future);">'+
       '<div class="q-card-title">🧠 Stage 5 실동작 — Collect · Compare '+
         '<span style="margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(active?'var(--auto-l)':'var(--future-l)')+';color:'+(active?'var(--auto)':'var(--future)')+';">'+
-        (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span></div>'+
+        (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span>'+
+        '<button class="btn-sm" style="margin-left:10px;font-size:11px;" onclick="runLearn(this)">🔄 학습 실행</button></div>'+
       '<div style="font-size:11px;color:var(--g3);margin:4px 0 10px;">유효 전문가 '+respN+'명 · AI 자동채점 매칭 '+matchPct+'% · 실시간 Supabase 동기화<br>논문 근거: Stage 4 HITL 3단계 — 자동 스크리닝 → 전문가 검수 → 수정·재생성</div>'+
       '<table style="width:100%;border-collapse:collapse;">'+
         '<thead><tr style="border-bottom:1px solid var(--border);">'+
