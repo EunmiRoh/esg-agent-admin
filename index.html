@@ -243,6 +243,7 @@ tr:hover td{background:var(--navy-ll);}
   <div class="nav-section">
     <div class="nav-label">Stage 5 · 학습 (향후)</div>
     <button class="nav-item" onclick="show('learn',this)"><span class="ni">🧠</span> Learn (준비 중) <span class="nb future">soon</span></button>
+    <button class="nav-item" onclick="show('learnctrl',this)"><span class="ni">🎛️</span> 학습 관리</button>
   </div>
 
   <div class="sidebar-footer">
@@ -540,6 +541,14 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
+    <div class="panel" id="panel-learnctrl">
+      <div class="pipe-box" style="border-left:4px solid var(--auto);">
+        <div class="pipe-title" style="color:var(--auto);">🎛️ 학습 통제·관리</div>
+        <div class="pipe-desc">전문가 피드백으로 학습(튜닝 디렉티브)을 실행하고, 생성된 디렉티브를 <b>적용/보류/삭제</b>로 관리합니다. Agent 2 컨설팅 생성은 최신 <b>적용됨</b> 디렉티브를 반영합니다. (논문: Stage 4 HITL 수정·재생성)</div>
+        <div id="learnCtrlBody" style="margin-top:16px;"><div class="loading">로딩 중...</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -629,7 +638,7 @@ function show(n, el){
     dashboard:'현황 대시보드', pipeline:'Agent 파이프라인', logs:'실행 로그',
     hitl:'HITL 검수 큐', verify:'Stage 4 검증 링크 관리',
     data:'진단 결과 DB', quality:'품질 분석',
-    learn:'Stage 5 · Learn (향후 연구)'
+    learn:'Stage 5 · Learn (향후 연구)', learnctrl:'Stage 5 · 학습 통제·관리'
   };
   document.getElementById('topTitle').textContent = t[n] || '';
 }
@@ -683,6 +692,7 @@ async function loadAll(){
     renderQuality();
     renderVerify();
     renderLearn();
+    renderLearnCtrl();
   } catch(e){
     console.error(e);
     alert('데이터 로드 실패: ' + e.message);
@@ -1177,6 +1187,71 @@ function closeRespModal(){
 // ═══════════════════════════════════════════════════════════════════════════
 // LEARN 패널 (Stage 5 · 향후 연구 — 구조만 노출)
 // ═══════════════════════════════════════════════════════════════════════════
+// 학습 실행: 전문가 피드백 → LLM 디렉티브 자동 생성 (esg-platform-v8/api/learn) → 저장 후 어드민 동기화
+const LEARN_ENDPOINT = 'https://esg-platform-v8.vercel.app/api/learn';
+async function runLearn(btn){
+  if(btn){ btn.disabled = true; btn.textContent = '학습 중...'; }
+  try {
+    const res = await fetch(LEARN_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){
+      alert('학습 실패: ' + (d.error || ('HTTP ' + res.status)));
+    } else {
+      alert('학습 완료 — 우선 차원: ' + (d.priority||'-') + ' (유효 전문가 ' + (d.n_experts||'-') + '명)\n새 디렉티브가 저장되었습니다.');
+      await loadAll(); // 어드민 화면 동기화 (stage5_learning 재조회)
+    }
+  } catch(e){
+    alert('학습 요청 오류: ' + (e && e.message || e));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 학습 실행'; }
+  }
+}
+
+// 디렉티브 관리 (적용/보류/삭제) — service role 엔드포인트 경유
+const MANAGE_ENDPOINT = 'https://esg-platform-v8.vercel.app/api/learn-manage';
+async function manageDirective(action, id, btn){
+  if(action === 'delete' && !confirm('이 디렉티브를 삭제할까요?')) return;
+  if(btn){ btn.disabled = true; }
+  try {
+    const res = await fetch(MANAGE_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action: action, id: id }) });
+    const d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){ alert('처리 실패: ' + (d.error || ('HTTP ' + res.status))); }
+    else { await loadAll(); }
+  } catch(e){ alert('요청 오류: ' + (e && e.message || e)); }
+  finally { if(btn){ btn.disabled = false; } }
+}
+
+// 학습 관리 패널 렌더 (실행 + 디렉티브 이력 관리)
+function renderLearnCtrl(){
+  const el = document.getElementById('learnCtrlBody');
+  if(!el) return;
+  const latest = allLearning[0];
+  const stName = { proposed:'제안', applied:'적용됨', validated:'검증됨' };
+  const rows = allLearning.map(function(l){
+    const dt = String(l.created_at||'').replace('T',' ').slice(0,16);
+    const done = (l.status==='applied' || l.status==='validated');
+    const dir = String(l.tuning_directive||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    return '<tr style="border-bottom:1px solid var(--border);">'+
+      '<td style="padding:8px;font-family:var(--mono);font-size:11px;vertical-align:top">'+dt+'</td>'+
+      '<td style="padding:8px;font-size:12px;color:var(--hitl);font-weight:600;vertical-align:top;white-space:nowrap">'+(l.priority_dimension||'-')+'</td>'+
+      '<td style="padding:8px;font-size:11px;color:var(--g2);vertical-align:top;line-height:1.6">'+dir+'</td>'+
+      '<td style="padding:8px;text-align:center;vertical-align:top"><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(done?'var(--auto-l)':'var(--future-l)')+';color:'+(done?'var(--auto)':'var(--future)')+';">'+(stName[l.status]||l.status)+'</span></td>'+
+      '<td style="padding:8px;text-align:center;vertical-align:top;white-space:nowrap">'+
+        (l.status!=='applied' ? '<button class="btn-sm" onclick="manageDirective(\'apply\',\''+l.id+'\',this)">적용</button> ' : '')+
+        (l.status!=='proposed' ? '<button class="btn-sm" onclick="manageDirective(\'hold\',\''+l.id+'\',this)">보류</button> ' : '')+
+        '<button class="btn-sm danger" onclick="manageDirective(\'delete\',\''+l.id+'\',this)">삭제</button>'+
+      '</td></tr>';
+  }).join('');
+  el.innerHTML =
+    '<div style="margin-bottom:16px;"><button class="btn-sm" style="font-size:13px;padding:9px 18px;background:var(--navy);border-color:var(--navy);color:#fff;" onclick="runLearn(this)">🔄 학습 실행 — 전문가 피드백으로 디렉티브 생성</button></div>'+
+    (latest
+      ? '<div style="margin-bottom:16px;padding:12px 14px;background:var(--auto-l);border-radius:6px;font-size:12px;color:var(--g1);line-height:1.7;">✅ <b>현재 적용 디렉티브</b> — 우선 차원 <b style="color:var(--hitl)">'+(latest.priority_dimension||'-')+'</b><br><span style="color:var(--g2)">'+String(latest.tuning_directive||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span></div>'
+      : '<div style="margin-bottom:16px;color:var(--g3);font-size:12px;">아직 학습 디렉티브가 없습니다. \'학습 실행\'을 눌러 생성하세요.</div>')+
+    (allLearning.length
+      ? '<div class="tbl-title" style="margin-bottom:8px;">디렉티브 이력 ('+allLearning.length+'건)</div><table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:2px solid var(--border);"><th style="padding:8px;font-size:11px;color:var(--g2);text-align:left">일시</th><th style="padding:8px;font-size:11px;color:var(--g2);text-align:left">우선 차원</th><th style="padding:8px;font-size:11px;color:var(--g2);text-align:left">디렉티브</th><th style="padding:8px;font-size:11px;color:var(--g2)">상태</th><th style="padding:8px;font-size:11px;color:var(--g2)">관리</th></tr></thead><tbody>'+rows+'</tbody></table>'
+      : '');
+}
+
 function renderLearn(){
   const threshold = 30;
   const TESTS = ['노은미모바일','노은미'];
@@ -1242,7 +1317,8 @@ function renderLearn(){
     '<div class="q-card" style="border-left:3px solid var(--future);">'+
       '<div class="q-card-title">🧠 Stage 5 실동작 — Collect · Compare '+
         '<span style="margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(active?'var(--auto-l)':'var(--future-l)')+';color:'+(active?'var(--auto)':'var(--future)')+';">'+
-        (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span></div>'+
+        (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span>'+
+        '<button class="btn-sm" style="margin-left:10px;font-size:11px;" onclick="runLearn(this)">🔄 학습 실행</button></div>'+
       '<div style="font-size:11px;color:var(--g3);margin:4px 0 10px;">유효 전문가 '+respN+'명 · AI 자동채점 매칭 '+matchPct+'% · 실시간 Supabase 동기화<br>논문 근거: Stage 4 HITL 3단계 — 자동 스크리닝 → 전문가 검수 → 수정·재생성</div>'+
       '<table style="width:100%;border-collapse:collapse;">'+
         '<thead><tr style="border-bottom:1px solid var(--border);">'+
