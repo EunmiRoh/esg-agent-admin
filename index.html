@@ -1168,15 +1168,86 @@ function closeRespModal(){
 // LEARN 패널 (Stage 5 · 향후 연구 — 구조만 노출)
 // ═══════════════════════════════════════════════════════════════════════════
 function renderLearn(){
-  const respN = allResponses.length;
   const threshold = 30;
+  const TESTS = ['노은미모바일','노은미'];
+  // 유효 전문가 응답: expert 타입 + 테스트 응답 제외
+  const experts = allResponses.filter(r =>
+    (r.respondent_type||'expert')==='expert' &&
+    !(r.expert_name && TESTS.includes((r.expert_name||'').trim()))
+  );
+  const respN = experts.length;
   const respPct = Math.min(100, (respN/threshold)*100);
   document.getElementById('learnRespBar').style.width = respPct + '%';
   document.getElementById('learnRespVal').textContent = respN + '/' + threshold;
 
-  // 매칭률은 향후 계산 — 현재는 placeholder
-  document.getElementById('learnMatchBar').style.width = '0%';
-  document.getElementById('learnMatchVal').textContent = respN ? '계산 대기' : '—';
+  // 1. Collect — 자동채점(AI 진단결과) 매칭
+  let matched = 0;
+  experts.forEach(r => {
+    const inv = allInvitations.find(i => i.id === r.invitation_id);
+    const diag = inv ? allData.find(d => d.id === inv.diagnosis_id) : null;
+    if(diag) matched++;
+  });
+  const matchPct = respN ? Math.round(matched/respN*100) : 0;
+  document.getElementById('learnMatchBar').style.width = matchPct + '%';
+  document.getElementById('learnMatchVal').textContent = respN ? (matched+'/'+respN+' ('+matchPct+'%)') : '—';
+
+  // 2. Compare — 차원별 전문가 평균 / 불일치(표준편차)
+  const DIMS = [
+    ['구체성','score_specificity'],['실행가능성','score_feasibility'],
+    ['산업적합성','score_industry_fit'],['구조성','score_structure'],['추적가능성','score_traceability']
+  ];
+  const stat = DIMS.map(function(d){
+    const col = d[1];
+    const vals = experts.map(function(r){ return r[col]; }).filter(function(v){ return v!=null; });
+    const n = vals.length;
+    const mean = n ? vals.reduce(function(a,b){return a+b;},0)/n : 0;
+    const sd = n>1 ? Math.sqrt(vals.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/(n-1)) : 0;
+    return { label:d[0], n:n, mean:mean, sd:sd };
+  });
+  // 3. Annotate — 학습 우선순위 = (5-평균) + 불일치(SD) 높은 순
+  const ranked = stat.map(function(s){ return Object.assign({}, s, { pri:(5-s.mean)+s.sd }); })
+                     .sort(function(a,b){ return b.pri-a.pri; });
+  const top = ranked[0];
+  const active = respN >= threshold || allResponses.length >= threshold;
+
+  // 결과 컨테이너 (HTML 수정 없이 동적 생성 — Supabase 실시간 동기화)
+  let box = document.getElementById('learnResults');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'learnResults';
+    box.style.marginTop = '18px';
+    const host = document.querySelector('#panel-learn .pipe-box');
+    if(host) host.appendChild(box);
+  }
+  const rows = stat.map(function(s){
+    const agree = (100 - (s.sd/4*100)).toFixed(0); // SD 0~4 → 일치도 100~0
+    return '<tr>'+
+      '<td style="padding:6px 8px;font-size:12px;color:var(--g1)">'+s.label+'</td>'+
+      '<td style="padding:6px 8px;font-family:var(--mono);font-size:12px;text-align:center">'+s.mean.toFixed(2)+'</td>'+
+      '<td style="padding:6px 8px;font-family:var(--mono);font-size:12px;text-align:center;color:'+(s.sd>=1.0?'var(--hitl)':'var(--g2)')+'">'+s.sd.toFixed(2)+'</td>'+
+      '<td style="padding:6px 8px;font-family:var(--mono);font-size:12px;text-align:center">'+agree+'%</td>'+
+      '<td style="padding:6px 8px;font-size:11px;text-align:center">'+s.n+'</td></tr>';
+  }).join('');
+  box.innerHTML =
+    '<div class="q-card" style="border-left:3px solid var(--future);">'+
+      '<div class="q-card-title">🧠 Stage 5 실동작 — Collect · Compare '+
+        '<span style="margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(active?'var(--auto-l)':'var(--future-l)')+';color:'+(active?'var(--auto)':'var(--future)')+';">'+
+        (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span></div>'+
+      '<div style="font-size:11px;color:var(--g3);margin:4px 0 10px;">유효 전문가 '+respN+'명 · AI 자동채점 매칭 '+matchPct+'% · 실시간 Supabase 동기화</div>'+
+      '<table style="width:100%;border-collapse:collapse;">'+
+        '<thead><tr style="border-bottom:1px solid var(--border);">'+
+          '<th style="padding:6px 8px;font-size:11px;color:var(--g2);text-align:left">차원</th>'+
+          '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">전문가 평균</th>'+
+          '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">불일치(SD)</th>'+
+          '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">일치도</th>'+
+          '<th style="padding:6px 8px;font-size:11px;color:var(--g2)">n</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table>'+
+      '<div style="margin-top:12px;padding:10px 12px;background:var(--hitl-l);border-radius:6px;font-size:12px;color:var(--g1);line-height:1.6;">'+
+        '📊 <b>Annotate</b> — 학습 우선 차원: <b style="color:var(--hitl)">'+(top?top.label:'-')+'</b> '+
+        '(평균 '+(top?top.mean.toFixed(2):'-')+' · 불일치 '+(top?top.sd.toFixed(2):'-')+')<br>'+
+        '🎓 <b>Fine-tune 제안</b> — Agent 2(RAG+KG)에서 \''+(top?top.label:'-')+'\' 관련 프롬프트·임계값 우선 조정 후 재검증.'+
+      '</div>'+
+    '</div>';
 }
 
 // ─── CSV 내보내기 ─────────────────────────────────────
