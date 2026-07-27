@@ -1243,7 +1243,7 @@ function renderLearn(){
       '<div class="q-card-title">🧠 Stage 5 실동작 — Collect · Compare '+
         '<span style="margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+(active?'var(--auto-l)':'var(--future-l)')+';color:'+(active?'var(--auto)':'var(--future)')+';">'+
         (active?'활성화됨 (n≥'+threshold+')':'대기 (n<'+threshold+')')+'</span></div>'+
-      '<div style="font-size:11px;color:var(--g3);margin:4px 0 10px;">유효 전문가 '+respN+'명 · AI 자동채점 매칭 '+matchPct+'% · 실시간 Supabase 동기화</div>'+
+      '<div style="font-size:11px;color:var(--g3);margin:4px 0 10px;">유효 전문가 '+respN+'명 · AI 자동채점 매칭 '+matchPct+'% · 실시간 Supabase 동기화<br>논문 근거: Stage 4 HITL 3단계 — 자동 스크리닝 → 전문가 검수 → 수정·재생성</div>'+
       '<table style="width:100%;border-collapse:collapse;">'+
         '<thead><tr style="border-bottom:1px solid var(--border);">'+
           '<th style="padding:6px 8px;font-size:11px;color:var(--g2);text-align:left">차원</th>'+
@@ -1255,7 +1255,8 @@ function renderLearn(){
       '<div style="margin-top:12px;padding:10px 12px;background:var(--hitl-l);border-radius:6px;font-size:12px;color:var(--g1);line-height:1.6;">'+
         '📊 <b>Annotate</b> — 학습 우선 차원: <b style="color:var(--hitl)">'+(top?top.label:'-')+'</b> '+
         '(평균 '+(top?top.mean.toFixed(2):'-')+' · 불일치 '+(top?top.sd.toFixed(2):'-')+')<br>'+
-        '🎓 <b>Fine-tune 제안</b> — Agent 2(RAG+KG)에서 \''+(top?top.label:'-')+'\' 관련 프롬프트·임계값 우선 조정 후 재검증.'+
+        '<span style="font-size:11px;color:var(--g2)">논문 기준: EIEC 자동채점 평균 4점 미만(80% 미만)은 품질 미달 플래그 → 전문가 검수(추적가능성·산업적합성 집중)</span><br>'+
+        '🎓 <b>수정·재생성 반영</b> — 전문가 피드백을 Agent 2(RAG+KG) 프롬프트 수정에 반영, \''+(top?top.label:'-')+'\' 우선 조정 후 재생성.'+
       '</div>'+
     '</div>';
 
@@ -1269,7 +1270,7 @@ function renderLearn(){
     if(host2) host2.appendChild(logBox);
   }
   if(!allLearning.length){
-    logBox.innerHTML = '<div class="q-card" style="border-left:3px solid var(--future);"><div class="q-card-title">🎓 Fine-tune 학습 이력</div><div style="font-size:12px;color:var(--g3);padding:8px 0;">아직 저장된 학습 디렉티브가 없습니다.</div></div>';
+    logBox.innerHTML = '<div class="q-card" style="border-left:3px solid var(--future);"><div class="q-card-title">🎓 HITL 수정·재생성 — 튜닝 디렉티브 이력</div><div style="font-size:12px;color:var(--g3);padding:8px 0;">아직 저장된 튜닝 디렉티브가 없습니다.</div></div>';
   } else {
     const latest = allLearning[0];
     const stName = { proposed:'제안', applied:'적용됨', validated:'검증됨' };
@@ -1285,7 +1286,7 @@ function renderLearn(){
     }).join('');
     logBox.innerHTML =
       '<div class="q-card" style="border-left:3px solid var(--auto);">'+
-        '<div class="q-card-title">🎓 Fine-tune 학습 이력 <span style="margin-left:8px;font-size:11px;color:var(--g3)">('+allLearning.length+'건 · 실시간 Supabase 동기화)</span></div>'+
+        '<div class="q-card-title">🎓 HITL 수정·재생성 — 프롬프트 튜닝 디렉티브 이력 <span style="margin-left:8px;font-size:11px;color:var(--g3)">('+allLearning.length+'건 · 실시간 Supabase 동기화 · Stage 5 종단 재학습은 후속 연구)</span></div>'+
         '<div style="margin:8px 0 12px;padding:10px 12px;background:var(--auto-l);border-radius:6px;font-size:12px;color:var(--g1);line-height:1.6;">'+
           '✅ <b>현재 적용 디렉티브</b> — 우선 차원 <b style="color:var(--hitl)">'+(latest.priority_dimension||'-')+'</b><br>'+
           '<span style="color:var(--g2)">'+String(latest.tuning_directive||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>'+
