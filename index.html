@@ -232,6 +232,7 @@ tr:hover td{background:var(--navy-ll);}
     <div class="nav-label">Stage 4 · HITL 검수</div>
     <button class="nav-item" onclick="show('hitl',this)"><span class="ni">🔴</span> HITL 큐 <span class="nb" id="hitlBadge">0</span></button>
     <button class="nav-item" onclick="show('verify',this)"><span class="ni">📨</span> 검증 링크 관리 <span class="nb accent" id="verifyBadge">0</span></button>
+    <button class="nav-item" onclick="show('meeting',this)"><span class="ni">🎙️</span> 회의 협의 HITL</button>
   </div>
 
   <div class="nav-section">
@@ -549,6 +550,26 @@ tr:hover td{background:var(--navy-ll);}
       </div>
     </div>
 
+    <div class="panel" id="panel-meeting">
+      <div class="pipe-box" style="border-left:4px solid var(--hitl);">
+        <div class="pipe-title" style="color:var(--hitl);">🎙️ 회의 협의 HITL — 다수 전문가 합의</div>
+        <div class="pipe-desc">1인 설문을 넘어, 다수 전문가가 <b>협의</b>한 회의 내용을 HITL 피드백으로 반영합니다. 회의록 텍스트를 넣으면 합의 의견을 자동 추출·저장하고, 학습 실행 시 개인 설문과 <b>함께</b> 디렉티브에 반영됩니다. (오디오 업로드는 준비중)</div>
+        <div class="q-section" style="margin-top:16px;">
+          <div class="q-card" style="border-left:3px solid var(--hitl);">
+            <div class="q-card-title">회의록 입력 (텍스트)</div>
+            <input id="meetingTitle" placeholder="회의 제목 (예: 2026-09 전문가 협의)" style="width:100%;padding:8px;margin:6px 0;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:13px;box-sizing:border-box;">
+            <textarea id="meetingText" placeholder="회의록/논의 내용을 붙여넣으세요. 다수 전문가의 협의 의견을 자동으로 항목화합니다." rows="7" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:var(--font);font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+            <button class="btn-sm" style="margin-top:10px;font-size:13px;padding:8px 16px;background:var(--hitl);border-color:var(--hitl);color:#fff;" onclick="submitMeeting(this)">🎙️ 협의 의견 추출·저장</button>
+          </div>
+          <div class="q-card" style="border-left:3px solid var(--g3);opacity:.7;">
+            <div class="q-card-title">🎧 오디오 녹음 업로드 <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--future-l);color:var(--future);margin-left:6px;">준비중</span></div>
+            <div style="font-size:12px;color:var(--g3);line-height:1.7;margin-top:8px;">녹음파일 업로드 → 자동 전사(STT) → 협의 의견 추출 기능은 준비중입니다. 현재는 회의록 텍스트 입력으로 이용해주세요.</div>
+          </div>
+        </div>
+        <div id="meetingBody" style="margin-top:18px;"><div class="loading">로딩 중...</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -588,6 +609,7 @@ let allData = [];           // diagnosis_results
 let allInvitations = [];    // survey_invitations
 let allResponses = [];      // survey_responses
 let allLearning = [];       // stage5_learning (Stage 5 학습 이력)
+let allMeetings = [];       // meeting_feedback (회의 협의 HITL)
 let currentFilter = 'all';
 let currentVFilter = 'all'; // verify 패널 샘플 필터
 let currentIFilter = 'all'; // verify 패널 발급내역 필터
@@ -638,7 +660,7 @@ function show(n, el){
     dashboard:'현황 대시보드', pipeline:'Agent 파이프라인', logs:'실행 로그',
     hitl:'HITL 검수 큐', verify:'Stage 4 검증 링크 관리',
     data:'진단 결과 DB', quality:'품질 분석',
-    learn:'Stage 5 · Learn (향후 연구)', learnctrl:'Stage 5 · 학습 통제·관리'
+    learn:'Stage 5 · Learn (향후 연구)', learnctrl:'Stage 5 · 학습 통제·관리', meeting:'Stage 4 · 회의 협의 HITL'
   };
   document.getElementById('topTitle').textContent = t[n] || '';
 }
@@ -683,6 +705,15 @@ async function loadAll(){
     } catch(_){}
     allLearning = learn;
 
+    // 5. 회의 협의 HITL (meeting_feedback)
+    let mtg = [];
+    try {
+      const { data, error } = await sb.from('meeting_feedback')
+        .select('*').order('created_at', { ascending:false });
+      if(!error) mtg = data || [];
+    } catch(_){}
+    allMeetings = mtg;
+
     document.getElementById('lastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
 
     renderDashboard();
@@ -693,6 +724,7 @@ async function loadAll(){
     renderVerify();
     renderLearn();
     renderLearnCtrl();
+    renderMeeting();
   } catch(e){
     console.error(e);
     alert('데이터 로드 실패: ' + e.message);
@@ -1219,6 +1251,44 @@ async function manageDirective(action, id, btn){
     else { await loadAll(); }
   } catch(e){ alert('요청 오류: ' + (e && e.message || e)); }
   finally { if(btn){ btn.disabled = false; } }
+}
+
+// 회의 협의 HITL — 회의록 텍스트 제출 → 협의 의견 추출·저장
+const MEETING_ENDPOINT = 'https://esg-platform-v8.vercel.app/api/meeting-extract';
+async function submitMeeting(btn){
+  const title = (document.getElementById('meetingTitle') || {}).value || '';
+  const text = (document.getElementById('meetingText') || {}).value || '';
+  if(text.trim().length < 10){ alert('회의록 텍스트를 입력하세요(10자 이상).'); return; }
+  if(btn){ btn.disabled = true; btn.textContent = '추출 중...'; }
+  try {
+    const res = await fetch(MEETING_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title: title, transcript: text }) });
+    const d = await res.json().catch(function(){ return {}; });
+    if(!res.ok || d.error){ alert('추출 실패: ' + (d.error || ('HTTP ' + res.status))); }
+    else {
+      alert('협의 의견 ' + (d.n_points || 0) + '개 추출·저장 완료 (방식: ' + (d.method==='rule'?'규칙기반':'LLM') + ')\n다음 학습 실행 시 개인 설문과 함께 반영됩니다.');
+      var t = document.getElementById('meetingText'); if(t) t.value = '';
+      var ti = document.getElementById('meetingTitle'); if(ti) ti.value = '';
+      await loadAll();
+    }
+  } catch(e){ alert('요청 오류: ' + (e && e.message || e)); }
+  finally { if(btn){ btn.disabled = false; btn.textContent = '🎙️ 협의 의견 추출·저장'; } }
+}
+function renderMeeting(){
+  const el = document.getElementById('meetingBody');
+  if(!el) return;
+  if(!allMeetings.length){ el.innerHTML = '<div style="color:var(--g3);font-size:12px;">아직 등록된 회의 협의가 없습니다. 위에 회의록을 입력해 추출하세요.</div>'; return; }
+  const cards = allMeetings.map(function(m){
+    const dt = String(m.created_at||'').replace('T',' ').slice(0,16);
+    const pts = Array.isArray(m.points) ? m.points : [];
+    const lis = pts.map(function(p){ return '<li style="margin:3px 0;">' + String(p).replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</li>'; }).join('');
+    const ttl = m.title ? String(m.title).replace(/&/g,'&amp;').replace(/</g,'&lt;') : '(제목 없음)';
+    return '<div class="q-card" style="border-left:3px solid var(--hitl);margin-bottom:12px;">'+
+      '<div class="q-card-title">' + ttl +
+      ' <span style="font-size:11px;color:var(--g3);font-weight:400;">· ' + dt + ' · 합의 ' + pts.length + '건 · ' + (m.method==='rule'?'규칙기반':'LLM') + '</span></div>'+
+      '<ul style="margin:8px 0 0;padding-left:20px;font-size:12px;color:var(--g1);line-height:1.6;">' + lis + '</ul>'+
+    '</div>';
+  }).join('');
+  el.innerHTML = '<div class="tbl-title" style="margin-bottom:8px;">회의 협의 이력 (' + allMeetings.length + '건 · 실시간 Supabase 동기화)</div>' + cards;
 }
 
 // 학습 관리 패널 렌더 (실행 + 디렉티브 이력 관리)
