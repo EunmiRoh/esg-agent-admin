@@ -67,18 +67,24 @@ body{font-family:var(--font);background:var(--off);color:var(--g1);display:flex;
 .agent-node.future{border-color:var(--future);border-style:dashed;background:var(--future-l);opacity:.85;}
 .agent-node .stage-tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;background:var(--navy);color:#fff;padding:2px 8px;border-radius:8px;letter-spacing:.5px;}
 .agent-node.future .stage-tag{background:var(--future);}
+.agent-node.learning{border-color:var(--future);background:var(--future-l);}
+.agent-node.learning .stage-tag{background:var(--future);}
 .agent-node.hitl .stage-tag{background:var(--hitl);}
 .a-icon{font-size:20px;margin-top:4px;}.a-name{font-size:11px;font-weight:700;color:var(--navy);text-align:center;line-height:1.3;}
 .a-stat{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
 .a-stat.done{background:var(--auto-l);color:var(--auto);}
 .a-stat.hitl{background:#fff;color:var(--hitl);border:1px solid var(--hitl);}
 .a-stat.future{background:#fff;color:var(--future);border:1px solid var(--future);}
+.a-stat.learning{background:var(--future);color:#fff;}
+.a-stat.learning::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#fff;margin-right:5px;vertical-align:middle;animation:learnPulse 1.4s ease-in-out infinite;}
+@keyframes learnPulse{0%,100%{opacity:1}50%{opacity:.25}}
 .a-time{font-size:10px;color:var(--g3);font-family:var(--mono);}
 .arrow{width:30px;height:2px;background:var(--border);position:relative;flex-shrink:0;}
 .arrow::after{content:'▶';position:absolute;right:-6px;top:-7px;font-size:10px;color:var(--border);}
 .arrow.done{background:var(--auto);}.arrow.done::after{color:var(--auto);}
 .arrow.future{background:var(--future);background-image:linear-gradient(90deg,var(--future) 50%,transparent 50%);background-size:8px 2px;background-repeat:repeat-x;}
 .arrow.future::after{color:var(--future);}
+.arrow.learning{background:var(--future);}.arrow.learning::after{color:var(--future);}
 .q-section{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
 .q-card{background:var(--white);border-radius:8px;border:1px solid var(--border);padding:20px;}
 .q-card-title{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:16px;}
@@ -242,8 +248,8 @@ tr:hover td{background:var(--navy-ll);}
   </div>
 
   <div class="nav-section">
-    <div class="nav-label">Stage 5 · 학습 (향후)</div>
-    <button class="nav-item" onclick="show('learn',this)"><span class="ni">🧠</span> Learn (준비 중) <span class="nb future">soon</span></button>
+    <div class="nav-label">Stage 5 · 학습</div>
+    <button class="nav-item" onclick="show('learn',this)"><span class="ni">🧠</span> Learn (학습) <span class="nb future" id="learnBadge">…</span></button>
     <button class="nav-item" onclick="show('learnctrl',this)"><span class="ni">🎛️</span> 학습 관리</button>
   </div>
 
@@ -280,7 +286,7 @@ tr:hover td{background:var(--navy-ll);}
 
       <div class="pipe-box">
         <div class="pipe-title">Agentic AI 5단계 ESG 컨설팅 파이프라인</div>
-        <div class="pipe-desc">Perceive → Reason → Plan+Act → Verify → Learn 순환 구조 (본 연구 범위: Stage 1~4 / Stage 5 향후 연구)</div>
+        <div class="pipe-desc">Perceive → Reason → Plan+Act → Verify → Learn 순환 구조 <span id="pipeScope">(논문 범위: Stage 1~4 / Stage 5 학습 상태 확인 중…)</span></div>
         <div class="pipe">
           <div class="agent-node done"><span class="stage-tag">STAGE 1</span><div class="a-icon">📥</div><div class="a-name">Perceive<br>인지</div><div class="a-stat done">자가진단</div><div class="a-time">30문항</div></div>
           <div class="arrow done"></div>
@@ -289,8 +295,8 @@ tr:hover td{background:var(--navy-ll);}
           <div class="agent-node done"><span class="stage-tag">STAGE 3</span><div class="a-icon">📝</div><div class="a-name">Plan+Act<br>계획·실행</div><div class="a-stat done">RAG+KG</div><div class="a-time">~8.5s</div></div>
           <div class="arrow done"></div>
           <div class="agent-node hitl"><span class="stage-tag">STAGE 4</span><div class="a-icon">👤</div><div class="a-name">Verify<br>검증</div><div class="a-stat hitl">HITL</div><div class="a-time">전문가</div></div>
-          <div class="arrow future"></div>
-          <div class="agent-node future"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">Learn<br>학습</div><div class="a-stat future">준비 중</div><div class="a-time">향후 연구</div></div>
+          <div class="arrow future stage5-arrow"></div>
+          <div class="agent-node future stage5-node"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">Learn<br>학습</div><div class="a-stat future stage5-stat">확인 중</div><div class="a-time stage5-time">동기화 중</div></div>
         </div>
       </div>
 
@@ -317,8 +323,8 @@ tr:hover td{background:var(--navy-ll);}
           <div class="agent-node done"><span class="stage-tag">STAGE 3-E</span><div class="a-icon">📎</div><div class="a-name">evidence</div><div class="a-stat done">continue</div><div class="a-time">법규 ✓</div></div>
           <div class="arrow done"></div>
           <div class="agent-node hitl"><span class="stage-tag">STAGE 4</span><div class="a-icon">👤</div><div class="a-name">review</div><div class="a-stat hitl">HITL</div><div class="a-time">전문가 검수</div></div>
-          <div class="arrow future"></div>
-          <div class="agent-node future"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">learn</div><div class="a-stat future">준비 중</div><div class="a-time">향후 연구</div></div>
+          <div class="arrow future stage5-arrow"></div>
+          <div class="agent-node future stage5-node"><span class="stage-tag">STAGE 5</span><div class="a-icon">🧠</div><div class="a-name">learn</div><div class="a-stat future stage5-stat">확인 중</div><div class="a-time stage5-time">동기화 중</div></div>
         </div>
       </div>
 
@@ -660,7 +666,7 @@ function show(n, el){
     dashboard:'현황 대시보드', pipeline:'Agent 파이프라인', logs:'실행 로그',
     hitl:'HITL 검수 큐', verify:'Stage 4 검증 링크 관리',
     data:'진단 결과 DB', quality:'품질 분석',
-    learn:'Stage 5 · Learn (향후 연구)', learnctrl:'Stage 5 · 학습 통제·관리', meeting:'Stage 4 · 회의 협의 HITL'
+    learn:'Stage 5 · Learn (학습)', learnctrl:'Stage 5 · 학습 통제·관리', meeting:'Stage 4 · 회의 협의 HITL'
   };
   document.getElementById('topTitle').textContent = t[n] || '';
 }
@@ -724,6 +730,7 @@ async function loadAll(){
     renderVerify();
     renderLearn();
     renderLearnCtrl();
+    renderStage5Status();
     renderMeeting();
   } catch(e){
     console.error(e);
@@ -1289,6 +1296,35 @@ function renderMeeting(){
     '</div>';
   }).join('');
   el.innerHTML = '<div class="tbl-title" style="margin-bottom:8px;">회의 협의 이력 (' + allMeetings.length + '건 · 실시간 Supabase 동기화)</div>' + cards;
+}
+
+// Stage 5 상태 표시 — stage5_learning 이력에서 자동 산출 (수동 갱신 불필요)
+//   applied/validated 디렉티브 있음 → 학습 중 / 제안만 있음 → 학습 대기 / 이력 없음 → 준비 중
+function renderStage5Status(){
+  const active = allLearning.filter(function(l){ return l.status === 'applied' || l.status === 'validated'; });
+  const latest = allLearning[0];
+  const lastDate = latest ? String(latest.created_at||'').slice(5,10).replace('-','.') : '';
+  let mode, stat, time, badge, scope;
+  if(active.length){
+    mode = 'learning'; stat = '학습 중'; badge = 'live';
+    time = '디렉티브 ' + active.length + '건 · ' + lastDate;
+    scope = '(논문 범위: Stage 1~4 / 이후 Stage 5 학습 루프 운영 중 — 최근 학습 ' + lastDate + ')';
+  } else if(allLearning.length){
+    mode = 'learning'; stat = '학습 대기'; badge = allLearning.length;
+    time = '제안 ' + allLearning.length + '건 · ' + lastDate;
+    scope = '(논문 범위: Stage 1~4 / 이후 Stage 5 디렉티브 제안 ' + allLearning.length + '건 — 적용 대기)';
+  } else {
+    mode = 'future'; stat = '준비 중'; badge = 'soon';
+    time = '향후 연구';
+    scope = '(논문 범위: Stage 1~4 / Stage 5 향후 연구)';
+  }
+  document.querySelectorAll('.stage5-node, .stage5-arrow, .stage5-stat').forEach(function(n){
+    n.classList.remove('future','learning'); n.classList.add(mode);
+  });
+  document.querySelectorAll('.stage5-stat').forEach(function(n){ n.textContent = stat; });
+  document.querySelectorAll('.stage5-time').forEach(function(n){ n.textContent = time; });
+  const b = document.getElementById('learnBadge'); if(b) b.textContent = badge;
+  const sc = document.getElementById('pipeScope'); if(sc) sc.textContent = scope;
 }
 
 // 학습 관리 패널 렌더 (실행 + 디렉티브 이력 관리)
