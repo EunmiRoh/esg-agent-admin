@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-10-22T22:50:39+09:00",
+  "period": {
+    "from": "2026-09-01",
+    "to": "2026-10-01"
+  },
+  "diagnosis": {
+    "total": 30,
+    "last_month": 0,
+    "grade_distribution": {
+      "B0": 6,
+      "D": 2,
+      "B-": 17,
+      "C": 5
+    },
+    "industry_distribution": {
+      "제조업": 27,
+      "기타서비스": 2,
+      "건설업": 1
+    },
+    "mean_score": 52.57,
+    "mean_esg": {
+      "e": 2.55,
+      "s": 2.66,
+      "g": 2.69
+    }
+  },
+  "survey": {
+    "invitations_total": 45,
+    "invitations_last_month": 0,
+    "invitation_status": {
+      "pending": 13,
+      "completed": 32
+    },
+    "responses_total_excl_test": 29,
+    "responses_last_month": 0,
+    "expert": {
+      "n": 17,
+      "dimension_means": {
+        "score_specificity": 3.76,
+        "score_feasibility": 3.24,
+        "score_industry_fit": 3.59,
+        "score_structure": 3.76,
+        "score_traceability": 3.59
+      }
+    },
+    "demand": {
+      "n": 12,
+      "overall_satisfaction": 4.25,
+      "adoption_intent": 4.08,
+      "nps_recommend": 4.17
+    }
+  },
+  "meeting_feedback": {
+    "total": 1,
+    "last_month": 1,
+    "points_total": 6,
+    "status": {
+      "active": 1
+    }
+  },
+  "stage5_learning": {
+    "total": 4,
+    "last_month": 3,
+    "status": {
+      "applied": 4
+    },
+    "latest_at": "2026-09-08T05:47:56.435475+00:00",
+    "history": [
+      {
+        "created_at": "2026-09-08T05:47:56.435475+00:00",
+        "status": "applied",
+        "priority_dimension": "실행가능성",
+        "priority_mean": 3.24,
+        "priority_sd": 1.09,
+        "n_experts": 17
+      },
+      {
+        "created_at": "2026-09-07T09:43:29.104786+00:00",
+        "status": "applied",
+        "priority_dimension": "실행가능성",
+        "priority_mean": 3.24,
+        "priority_sd": 1.09,
+        "n_experts": 17
+      },
+      {
+        "created_at": "2026-09-07T05:50:12.762994+00:00",
+        "status": "applied",
+        "priority_dimension": "실행가능성",
+        "priority_mean": 3.24,
+        "priority_sd": 1.09,
+        "n_experts": 17
+      },
+      {
+        "created_at": "2026-07-27T07:43:23.324925+00:00",
+        "status": "applied",
+        "priority_dimension": "실행가능성",
+        "priority_mean": 3.24,
+        "priority_sd": 1.09,
+        "n_experts": 17
+      }
+    ]
+  }
+}
