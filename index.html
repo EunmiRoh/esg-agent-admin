@@ -279,7 +279,7 @@ tr:hover td{background:var(--navy-ll);}
   <div class="topbar">
     <div class="topbar-title" id="topTitle">현황 대시보드</div>
     <div class="topbar-right">
-      <span style="font-size:11px;color:var(--g3);" id="lastUpdate"></span>
+      <span style="font-size:11px;color:var(--g3);" id="liveDot" title="Supabase 실시간 동기화"></span><span style="font-size:11px;color:var(--g3);" id="lastUpdate"></span>
       <button class="btn-sm" onclick="loadAll()">↻ 새로고침</button>
       <button class="btn-sm primary" onclick="exportCSV()">📥 CSV</button>
     </div>
@@ -668,6 +668,7 @@ function doLogin(){
     document.getElementById('loginOverlay').classList.add('hidden');
     initBaseUrlUI();
     loadAll();
+    startRealtime();
   } else {
     document.getElementById('loginErr').style.display = 'block';
   }
@@ -676,6 +677,8 @@ function doLogout(){
   document.getElementById('loginOverlay').classList.remove('hidden');
   document.getElementById('loginPw').value = '';
   document.getElementById('loginErr').style.display = 'none';
+  if(liveChannel){ sb.removeChannel(liveChannel); liveChannel = null; }
+  const dot = document.getElementById('liveDot'); if(dot) dot.textContent = '';
 }
 
 function initBaseUrlUI(){
@@ -698,6 +701,27 @@ function show(n, el){
     learn:'Stage 5 · Learn (학습)', learnctrl:'Stage 5 · 학습 통제·관리', meeting:'Stage 4 · 회의 협의 HITL'
   };
   document.getElementById('topTitle').textContent = t[n] || '';
+}
+
+// ─── 실시간 동기화 ────────────────────────────────────
+// 진단·응답·검수·자동 판정·학습·회의 테이블이 바뀌면 화면을 다시 불러온다(1.5초 디바운스).
+// 테이블은 supabase_realtime publication에 등록돼 있어야 한다.
+const LIVE_TABLES = ['diagnosis_results','survey_responses','hitl_reviews','auto_judgments','stage5_learning','meeting_feedback'];
+let liveChannel = null, liveTimer = null;
+function startRealtime(){
+  if(!sb || liveChannel) return;
+  const dot = document.getElementById('liveDot');
+  liveChannel = sb.channel('admin-live');
+  LIVE_TABLES.forEach(t => liveChannel.on('postgres_changes', { event:'*', schema:'public', table:t }, () => {
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(loadAll, 1500);
+  }));
+  liveChannel.subscribe(status => {
+    if(!dot) return;
+    const on = status === 'SUBSCRIBED';
+    dot.textContent = on ? '● 실시간 ' : '○ 실시간 끊김 ';
+    dot.style.color = on ? 'var(--auto)' : 'var(--g3)';
+  });
 }
 
 // ─── 데이터 로드 ──────────────────────────────────────
