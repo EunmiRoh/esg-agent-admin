@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-22T22:50:39+09:00",
+  "generated_at": "2026-11-03T14:47:19+09:00",
   "period": {
-    "from": "2026-09-01",
-    "to": "2026-10-01"
+    "from": "2026-10-01",
+    "to": "2026-11-01"
   },
   "diagnosis": {
     "total": 30,
@@ -53,7 +53,7 @@
   },
   "meeting_feedback": {
     "total": 1,
-    "last_month": 1,
+    "last_month": 0,
     "points_total": 6,
     "status": {
       "active": 1
@@ -61,7 +61,7 @@
   },
   "stage5_learning": {
     "total": 4,
-    "last_month": 3,
+    "last_month": 0,
     "status": {
       "applied": 4
     },
