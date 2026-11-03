@@ -121,6 +121,7 @@ tr:hover td{background:var(--navy-ll);}
 .hitl-field .lbl{font-size:11px;font-weight:700;color:var(--g2);margin-bottom:6px;}
 .hitl-field input[type=text],.hitl-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:4px;padding:8px 10px;font-family:var(--font);font-size:12px;}
 .hitl-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding-top:6px;border-top:1px solid var(--border);margin-top:4px;padding-top:14px;}
+#hitlBody .badge,#hitlBody .btn-sm{white-space:nowrap;}
 .hitl-links a{display:inline-block;margin:0 10px 6px 0;font-size:12px;color:var(--accent);}
 .dist-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
 .dist-color{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
@@ -362,7 +363,7 @@ tr:hover td{background:var(--navy-ll);}
 
     <!-- ═══════════════ HITL ═══════════════ -->
     <div class="panel" id="panel-hitl">
-      <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">HITL 검수 큐 (점수 &lt; 50 또는 등급 C·D) <span id="hitlSummary" style="font-weight:400;color:var(--g3);font-size:11px;margin-left:6px;"></span></div>
+      <div class="tbl-box"><div class="tbl-head"><div class="tbl-title">HITL 검수 큐 (점수 &lt; 50 · 등급 C·D · AI 자동 판정 미달) <span id="hitlSummary" style="font-weight:400;color:var(--g3);font-size:11px;margin-left:6px;"></span></div>
           <div style="display:flex;gap:6px;">
             <button class="btn-sm on" data-hitl-filter="pending" onclick="setHitlFilter('pending')">검수 대기</button>
             <button class="btn-sm" data-hitl-filter="done" onclick="setHitlFilter('done')">처리 완료</button>
@@ -643,6 +644,7 @@ let allResponses = [];      // survey_responses
 let allLearning = [];       // stage5_learning (Stage 5 학습 이력)
 let allMeetings = [];       // meeting_feedback (회의 협의 HITL)
 let allReviews = [];        // hitl_reviews (산출물 HITL 검수 결과)
+let allJudgments = [];      // auto_judgments (보고서 자동 판정)
 let currentFilter = 'all';
 let currentVFilter = 'all'; // verify 패널 샘플 필터
 let currentIFilter = 'all'; // verify 패널 발급내역 필터
@@ -756,6 +758,14 @@ async function loadAll(){
     } catch(_){}
     allReviews = rv;
 
+    // 7. 보고서 자동 판정 (auto_judgments — 없으면 빈 배열)
+    let aj = [];
+    try {
+      const { data, error } = await sb.from('auto_judgments').select('*');
+      if(!error) aj = data || [];
+    } catch(_){}
+    allJudgments = aj;
+
     document.getElementById('lastUpdate').textContent = '업데이트: ' + new Date().toLocaleTimeString('ko-KR');
 
     renderDashboard();
@@ -833,7 +843,8 @@ const HITL_DIMS = ['구체성','실행가능성','산업적합성','구조성','
 const HITL_STATUS = { pending:'검수 대기', approved:'승인', revision:'수정 요청', rejected:'반려' };
 let hitlFilter = 'pending';
 
-function hitlReason(r){
+function hitlReason(r, v){
+  if(v && v.trigger_reason) return v.trigger_reason;
   const why = [];
   if((r.score||0) < 50) why.push('점수 ' + (r.score ?? 0) + '<50');
   if(['C','D'].includes(r.grade)) why.push('등급 ' + r.grade);
@@ -845,6 +856,34 @@ function hitlItems(){
   return allData
     .filter(r => (r.score||0) < 50 || ['C','D'].includes(r.grade) || byDiag[r.id])
     .map(r => ({ d: r, v: byDiag[r.id] || null, status: (byDiag[r.id] && byDiag[r.id].status) || 'pending' }));
+}
+function hitlJudge(id){ return allJudgments.find(j => j.diagnosis_id === id) || null; }
+function hitlJudgeTag(id){
+  const j = hitlJudge(id);
+  if(!j) return '';
+  return j.decision === 'escalate'
+    ? ' <span class="badge revision" title="자동 판정: 전문가 검수 필요">AI 검수필요</span>'
+    : ' <span class="badge approved" title="자동 판정 통과">AI 통과</span>';
+}
+// 검수 모달의 자동 판정 요약 — 5차원 점수(1~5), 채점 근거, 법규·ISO 인용 검증
+function hitlJudgeSection(id){
+  const j = hitlJudge(id), e = escapeHtmlAdmin;
+  if(!j) return '<div class="hitl-field"><div class="lbl">자동 판정</div><div style="font-size:12px;color:var(--g3)">자동 판정 기록 없음 (자동 판정 도입 전 진단이거나 판정 대기 중)</div></div>';
+  const sc = j.scores || {}, rs = j.reasons || {}, c = j.citations || {};
+  const rows = HITL_DIMS.map(d => {
+    const v = sc[d];
+    const col = v == null ? 'var(--g3)' : v < 3 ? 'var(--hitl)' : v < 4 ? 'var(--cond)' : 'var(--auto)';
+    return `<div class="resp-row"><div class="resp-key">${d}</div><div class="resp-val"><b style="color:${col};font-family:var(--mono)">${v ?? '—'}</b><span style="color:var(--g3)"> / 5</span>${rs[d] ? ' · ' + e(rs[d]) : ''}</div></div>`;
+  }).join('');
+  const list = (arr, color) => (arr||[]).map(x => `<span class="badge" style="background:var(--off);color:${color};margin:0 4px 4px 0">${e(x)}</span>`).join('') || '<span style="color:var(--g3)">없음</span>';
+  return `<div class="hitl-field"><div class="lbl">자동 판정 — ${j.decision === 'escalate' ? '<span style="color:var(--cond)">전문가 검수 필요</span>' : '<span style="color:var(--auto)">통과</span>'} <span style="font-weight:400;color:var(--g3)">(${j.method === 'llm' ? 'AI 채점' : '규칙만'} · ${new Date(j.created_at).toLocaleString('ko-KR')})</span></div>
+    ${(j.escalate_reasons||[]).length ? `<div style="font-size:12px;color:var(--cond);margin-bottom:6px">사유: ${e(j.escalate_reasons.join(' · '))}</div>` : ''}
+    <div class="resp-section" style="margin-bottom:8px">${rows}</div>
+    <div style="font-size:12px;line-height:1.9">
+      <div>확인된 법령·인증: ${list((c.laws||[]).concat(c.isos||[]), 'var(--auto)')}</div>
+      <div>확인 필요: ${list(c.unknown, 'var(--cond)')}</div>
+      ${(c.repealed||[]).length ? `<div>폐지 법령: ${list(c.repealed, 'var(--hitl)')}</div>` : ''}
+    </div></div>`;
 }
 function setHitlFilter(f){
   hitlFilter = f;
@@ -868,7 +907,7 @@ function renderHitl(){
     const r = x.d, v = x.v;
     const dt = r.created_at ? new Date(r.created_at).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
     const who = v && v.decided_at ? e(v.reviewer||'—') + ' · ' + new Date(v.decided_at).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}) : '—';
-    return `<tr><td style="font-family:var(--mono)">${i+1}</td><td style="font-weight:600;color:var(--g1)">${e(r.company_name||'')}</td><td>${e(r.company_industry||'')}</td><td><span class="badge d">${e(r.grade||'')}</span></td><td style="font-family:var(--mono)">${r.score??''}</td><td style="font-size:11px">${e(hitlReason(r))}</td><td><span class="badge ${x.status}">${HITL_STATUS[x.status]}</span></td><td style="font-size:11px">${who}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td><td><button class="btn-sm${x.status==='pending'?' primary':''}" onclick="openHitlModal('${r.id}')">${x.status==='pending'?'검수':'보기'}</button></td></tr>`;
+    return `<tr><td style="font-family:var(--mono)">${i+1}</td><td style="font-weight:600;color:var(--g1)">${e(r.company_name||'')}</td><td>${e(r.company_industry||'')}</td><td><span class="badge d">${e(r.grade||'')}</span></td><td style="font-family:var(--mono)">${r.score??''}</td><td style="font-size:11px">${e(hitlReason(r, v))}${hitlJudgeTag(r.id)}</td><td><span class="badge ${x.status}">${HITL_STATUS[x.status]}</span></td><td style="font-size:11px">${who}</td><td style="font-family:var(--mono);font-size:11px">${dt}</td><td><button class="btn-sm${x.status==='pending'?' primary':''}" onclick="openHitlModal('${r.id}')">${x.status==='pending'?'검수':'보기'}</button></td></tr>`;
   }).join('');
 }
 function openHitlModal(id){
@@ -890,9 +929,10 @@ function openHitlModal(id){
     <div class="resp-section">
       <div class="resp-row"><div class="resp-key">업종 · 규모</div><div class="resp-val">${e(r.company_industry||'—')} · ${e(r.company_size||'—')}</div></div>
       <div class="resp-row"><div class="resp-key">등급 · 점수</div><div class="resp-val">${e(r.grade||'—')} · ${r.score??'—'}점 (E ${r.e_score??'—'} / S ${r.s_score??'—'} / G ${r.g_score??'—'})</div></div>
-      <div class="resp-row"><div class="resp-key">진입 사유</div><div class="resp-val">${e(hitlReason(r))}</div></div>
+      <div class="resp-row"><div class="resp-key">진입 사유</div><div class="resp-val">${e(hitlReason(r, x.v))}</div></div>
       <div class="resp-row"><div class="resp-key">현재 상태</div><div class="resp-val"><span class="badge ${x.status}">${HITL_STATUS[x.status]}</span>${v.decided_at?' · '+e(v.reviewer||'')+' · '+new Date(v.decided_at).toLocaleString('ko-KR'):''}</div></div>
     </div>
+    ${hitlJudgeSection(r.id)}
     <div class="hitl-field"><div class="lbl">산출물</div><div class="hitl-links">${links.join('') || '<span style="font-size:12px;color:var(--g3)">저장된 보고서 링크가 없습니다.</span>'}</div></div>
     <div class="hitl-field"><div class="lbl">문제가 있는 품질 차원 (수정 요청·반려 시)</div><div class="hitl-dims" id="hitlDims">${dims}</div></div>
     <div class="hitl-field"><div class="lbl">검수 의견 — 수정 요청·반려 의견은 다음 학습에 반영됩니다</div><textarea id="hitlComment" rows="4" placeholder="예: 협력사 ESG 관리 과제는 50인 미만 기업에 비현실적 — 중장기 과제로 분리 필요">${e(v.comment||'')}</textarea></div>
@@ -919,7 +959,7 @@ async function submitHitl(id, status, btn){
   document.querySelectorAll('#hitlModal .hitl-actions button').forEach(b => b.disabled = true);
   try {
     const res = await fetch(HITL_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ diagnosis_id:id, status, flagged_dims:dims, comment, reviewer, trigger_reason: hitlReason(x.d) }) });
+      body: JSON.stringify({ diagnosis_id:id, status, flagged_dims:dims, comment, reviewer, trigger_reason: hitlReason(x.d, x.v) }) });
     const d = await res.json().catch(() => ({}));
     if(!res.ok || d.error){ alert('저장 실패: ' + (d.error || ('HTTP ' + res.status))); return; }
     closeHitlModal();
