@@ -1,36 +1,72 @@
-# Supabase 무료 플랜은 약 7일간 요청이 없으면 프로젝트를 자동 일시정지한다.
-# 매주 2회 읽기 전용 REST 요청을 보내 esg-platform DB(어드민·설문·자가진단 공용)가 멈추지 않게 한다.
+# Supabase 무료 플랜은 사용이 뜸하면 프로젝트를 자동 일시정지한다(읽기 요청만으로는 막히지 않음 — 2026-10~11 확인).
+# 매일 프로젝트 상태를 확인해 일시정지면 Management API로 복구하고, 활성이면 읽기 요청을 보낸다.
+# 필요: 저장소 시크릿 SUPABASE_ACCESS_TOKEN (supabase.com/dashboard/account/tokens 에서 발급).
+# 시크릿이 없으면 읽기 요청만 보내고, 정지 상태면 실패로 알린다.
 # URL·anon 키는 index.html의 createClient 설정에서 읽는다(키를 이 파일에 중복 저장하지 않음).
 name: Supabase keep-alive
 
 on:
   schedule:
-    - cron: '17 0 * * 1,4'   # 월·목 09:17 KST
-  workflow_dispatch:          # Actions 탭에서 수동 실행 가능
+    - cron: '17 0 * * *'   # 매일 09:17 KST
+  workflow_dispatch:        # Actions 탭에서 수동 실행 가능
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: index.html
           sparse-checkout-cone-mode: false
 
-      - name: Ping database
+      - name: Read config
         run: |
           url=$(grep -oE "https://[a-z0-9]+\.supabase\.co" index.html | head -1)
           key=$(grep -A2 "createClient(" index.html | grep -oE "eyJ[A-Za-z0-9_.-]+" | head -1)
           if [ -z "$url" ] || [ -z "$key" ]; then
             echo "::error::index.html에서 Supabase 설정을 찾지 못했습니다."; exit 1
           fi
+          ref=${url#https://}; ref=${ref%%.*}
+          echo "::add-mask::$key"
+          { echo "SB_URL=$url"; echo "SB_KEY=$key"; echo "SB_REF=$ref"; } >> "$GITHUB_ENV"
+
+      - name: Restore if paused
+        if: env.SUPABASE_ACCESS_TOKEN != ''
+        run: |
+          api="https://api.supabase.com/v1/projects/$SB_REF"
+          auth="Authorization: Bearer $SUPABASE_ACCESS_TOKEN"
+          status=$(curl -sS -H "$auth" "$api" | jq -r '.status // "UNKNOWN"')
+          echo "프로젝트 상태: $status"
+          if [ "$status" = "INACTIVE" ]; then
+            echo "일시정지 상태 → 복구 요청"
+            curl -sS -f -X POST -H "$auth" "$api/restore" > /dev/null
+            for i in $(seq 1 30); do
+              sleep 30
+              status=$(curl -sS -H "$auth" "$api" | jq -r '.status // "UNKNOWN"')
+              echo "  $((i * 30))초: $status"
+              [ "$status" = "ACTIVE_HEALTHY" ] && break
+            done
+            echo "### ⚠️ Supabase가 일시정지돼 있어 자동 복구했습니다 (최종 상태: $status)" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$status" != "ACTIVE_HEALTHY" ]; then
+              echo "::error::복구가 15분 안에 끝나지 않았습니다. Supabase 대시보드를 확인하세요."; exit 1
+            fi
+          fi
+
+      - name: Ping database
+        run: |
           for t in diagnosis_results stage5_learning; do
             code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 10 \
-              "$url/rest/v1/$t?select=id&limit=1" -H "apikey: $key" -H "Authorization: Bearer $key")
+              "$SB_URL/rest/v1/$t?select=id&limit=1" -H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY" || true)
             echo "$t -> HTTP $code"
             if [ "$code" != "200" ]; then
-              echo "::error::$t 응답 $code — 프로젝트가 일시정지됐을 수 있습니다. Supabase 대시보드에서 Restore 하세요."
+              if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+                echo "::error::$t 응답 $code — 프로젝트가 일시정지됐을 수 있습니다. 자동 복구하려면 저장소 시크릿 SUPABASE_ACCESS_TOKEN을 등록하세요."
+              else
+                echo "::error::$t 응답 $code — 복구 직후라면 몇 분 뒤 다시 실행하세요."
+              fi
               exit 1
             fi
           done
